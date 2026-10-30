@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The System – Hunter Quest Log</title>
+<style>
+:root{color-scheme:dark;--bg:#05070f;--panel:#0c1224;--line:#1f3a6e;--glow:#3b9cff;--txt:#dbe8ff;--mut:#7f93b8;--gold:#ffd24a;--bad:#ff4d6d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#10234d,var(--bg) 60%) fixed;color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:1000px;margin:auto;padding:14px}
+.panel{background:linear-gradient(160deg,#0e1730,#080d1b);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 0 18px #3b9cff22,inset 0 0 20px #3b9cff0d;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow);text-shadow:0 0 8px var(--glow)}
+.hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.rank{width:74px;height:74px;border:2px solid var(--glow);border-radius:14px;display:grid;place-items:center;font-size:38px;font-weight:900;color:var(--glow);text-shadow:0 0 14px var(--glow);box-shadow:0 0 18px #3b9cff66;transform:rotate(45deg)}
+.rank span{transform:rotate(-45deg)}
+.hero .info{flex:1;min-width:200px}
+.name{font-size:20px;font-weight:700;letter-spacing:.05em;cursor:pointer}
+.bar{height:14px;background:#0a1020;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#1a6bff,#6fd0ff);box-shadow:0 0 12px var(--glow);transition:width .6s}
+.mut{color:var(--mut);font-size:12px}.gold{color:var(--gold);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.stat{text-align:center;background:#0a1020;border:1px solid var(--line);border-radius:8px;padding:6px 2px;font-size:11px;color:var(--mut)}
+.stat b{display:block;font-size:18px;color:var(--txt)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px}
+.day{height:130px;border-radius:10px;border:2px solid transparent;position:relative;cursor:pointer;overflow:hidden;padding:8px;display:flex;flex-direction:column;justify-content:flex-end;transition:.25s;color:#fff}
+.day:hover{transform:translateY(-4px)}
+.day.sel{border-color:#fff;box-shadow:0 0 20px var(--glow)}
+.day .em{position:absolute;top:6px;right:8px;font-size:34px;filter:drop-shadow(0 0 8px #000)}
+.day .dn{font-weight:800;letter-spacing:.1em;font-size:13px;text-shadow:0 1px 6px #000}
+.day .th{font-size:10px;opacity:.85;text-shadow:0 1px 4px #000}
+.day .pr{font-size:11px;margin-top:3px;background:#000a;border-radius:6px;padding:1px 6px;width:fit-content}
+.day.today::after{content:"TODAY";position:absolute;top:6px;left:6px;font-size:9px;background:var(--glow);color:#000;padding:1px 5px;border-radius:4px;font-weight:800}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+button{background:#0a1a3a;color:var(--txt);border:1px solid var(--glow);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+button:hover{background:#12306a;box-shadow:0 0 10px var(--glow)}
+button.sm{padding:3px 8px;font-size:12px}
+.cols{display:grid;grid-template-columns:340px 1fr;gap:14px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}.stats{gap:4px}}
+svg text{fill:var(--mut);font-size:11px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+form .full{grid-column:1/-1}
+input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px;width:100%;font:inherit;font-size:13px}
+.task{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;margin-bottom:6px;background:#0a1020}
+.task.done{opacity:.5;text-decoration:line-through}
+.task .t{flex:1}.task .t small{display:block;color:var(--mut);text-decoration:none}
+.chk{width:24px;height:24px;border-radius:6px;border:2px solid var(--glow);background:none;padding:0;display:grid;place-items:center}
+.task.done .chk{background:var(--glow);color:#000}
+.xp{color:#6fd0ff;font-weight:700;font-size:12px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button.on{background:var(--glow);color:#000}
+.shop{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
+.wq{margin-bottom:8px;font-size:13px}
+#toast{position:fixed;inset:0;display:none;place-items:center;background:#000c;z-index:50;text-align:center}
+#toast.show{display:grid}
+#toast div{font-size:44px;font-weight:900;color:var(--glow);text-shadow:0 0 30px var(--glow);letter-spacing:.15em;animation:pop .6s}
+#toast p{font-size:15px;color:var(--txt);letter-spacing:.05em}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+#hm{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;overflow-x:auto;padding:2px}#hm i{border-radius:3px;border:1px solid #1f3a6e55}
+.cb{height:10px;border-radius:5px;margin:2px 0 8px}.wide{display:flex;gap:8px;flex-wrap:wrap}
+</style></head><body><div class="wrap">
+<div id="auth" style="display:none;position:fixed;inset:0;z-index:99;background:#05070fee;place-items:center;padding:20px"><div class="panel" style="max-width:340px;width:100%;margin:0"><h2>⚔ The System</h2><p class="mut">Log in or sign up to sync your quests on all your devices.</p>
+<input id="em" type="email" placeholder="Email" autocomplete="email"><br><br><input id="pw" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password"><br><br>
+<div class="wide"><button onclick="auth('in')">Log in</button><button onclick="auth('up')">Sign up</button></div><p class="mut" id="am"></p></div></div>
+<div class="panel hero">
+ <div class="rank"><span id="rk">E</span></div>
+ <div class="info">
+  <div class="name" id="nm" title="Click to rename"></div>
+  <div class="mut" id="ttl"></div>
+  <div class="bar"><i id="xb"></i></div>
+  <div class="mut"><span id="xt"></span> · 🔥 Streak <b id="st">0</b> days · <span class="gold">🪙 <span id="gd">0</span></span></div>
+ </div>
+ <div class="stats" id="stats" style="width:100%"></div>
+</div>
+
+<div class="panel"><div class="nav"><button class="sm" onclick="wk(-1)">◀ Prev</button><h2 id="wl" style="margin:0"></h2><button class="sm" onclick="wk(1)">Next ▶</button></div>
+<div class="week" id="week"></div></div>
+
+<div class="cols">
+ <div class="panel"><h2 id="ch">Chrono Gate</h2>
+  <svg id="clk" viewBox="0 0 320 320" width="100%"></svg>
+  <form id="f">
+   <input class="full" id="tt" placeholder="New quest name..." required>
+   <div><div class="mut">From</div><input type="time" id="ts" value="09:00" required></div>
+   <div><div class="mut">To</div><input type="time" id="te" value="10:00" required></div>
+   <select id="tc"><option value="STR">💪 Fitness (STR)</option><option value="INT">📚 Study (INT)</option><option value="VIT">🍎 Health (VIT)</option><option value="AGI">💼 Work (AGI)</option><option value="SEN">🧘 Mind (SEN)</option></select>
+   <select id="tr"><option value="once">This day only</option><option value="daily">Every day (habit)</option><option value="weekly">Every week (this weekday)</option></select>
+   <select id="tx" class="full"><option value="10">Easy – 10 XP</option><option value="25" selected>Normal – 25 XP</option><option value="50">Hard – 50 XP</option><option value="100">Boss – 100 XP</option></select>
+   <button class="full">＋ Add Quest</button>
+  </form>
+ </div>
+ <div>
+  <div class="panel"><h2 id="qh">Daily Quests</h2><div id="tl"></div></div>
+  <div class="panel"><h2>Weekly Progress</h2><div id="wp"></div></div>
+  <div class="panel"><h2>Reward Shop</h2><div id="sh"></div>
+   <form id="sf" style="grid-template-columns:1fr 80px auto"><input id="sn" placeholder="Custom reward" required><input id="sp" type="number" min="1" placeholder="🪙" required><button>Add</button></form></div>
+ </div>
+</div>
+<div class="panel"><h2>Performance</h2><div class="tabs" id="pt"></div>
+<div class="nav"><button class="sm" onclick="po--;perf()">◀</button><b id="pl"></b><button class="sm" onclick="po++;perf()">▶</button></div>
+<div class="stats" id="pk" style="grid-template-columns:repeat(4,1fr)"></div>
+<svg id="pc" viewBox="0 0 600 190" width="100%" style="margin-top:8px"></svg>
+<div id="pcat"></div><h2 style="margin-top:12px">Activity Heatmap (17 weeks)</h2><div id="hm"></div></div>
+<div class="panel"><h2>Data &amp; Sync</h2><div class="wide"><button onclick="pick()">📁 Choose auto-save folder</button><button onclick="recon()">🔄 Reconnect folder</button><button onclick="exp()">⬆ Export JSON</button><button onclick="$('imp').click()">⬇ Import &amp; merge</button></div>
+<input type="file" id="imp" accept=".json,application/json" multiple hidden>
+<p class="mut" id="fs"></p><p class="mut" id="cs"></p><button id="lo" onclick="out()" style="display:none">Log out</button>
+<p class="mut">Import only ADDS missing quests, completions and rewards — it never replaces or deletes what you already have. PC tip: pick a folder inside iCloud Drive / OneDrive / Dropbox, then import that same file on your iPhone (Files app). iPhone Safari cannot write to folders silently, so use Export → Save to Files there.</p></div>
+<div class="mut" style="text-align:center;padding:10px">Arise. Complete quests, earn XP, rise from E‑Rank to S‑Rank.</div>
+</div>
+<div id="toast" onclick="this.classList.remove('show')"><div id="tm">LEVEL UP!</div><p id="tp"></p></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// ===== PASTE YOUR SUPABASE VALUES BETWEEN THE QUOTES =====
+const SUPABASE_URL="https://mwsjsweumnonslrsrywk.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13c2pzd2V1bW5vbnNscnNyeXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNTkyMTgsImV4cCI6MjEwODkzNTIxOH0.sFHTtwbj3nK6b79COqGuUf60UgnX7gkmJfngIRz3uFg";
+// =========================================================
+const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const TH=[['🌙','Moonlit Gate','#1b1f5e,#6a3fb5'],['🔥','Flame Dungeon','#5e1010,#ff7a1a'],['🌲','Shadow Forest','#07281c,#1f8f5a'],['⚡','Storm Peak','#101a3a,#2f7bff'],['💎','Crystal Cavern','#0b3a4a,#4fe3e0'],['🏰','Crimson Castle','#3a0a1c,#c2255c'],['☁️','Sky Citadel','#1b3a6b,#9ad0ff']];
+const COL={STR:'#ff5d5d',INT:'#5da8ff',VIT:'#5dff9a',AGI:'#ffd24a',SEN:'#c27bff'};
+const $=id=>document.getElementById(id);
+let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:'Watch an episode 🍿',p:40},{n:'Sweet treat 🍰',p:60},{n:'Gaming hour 🎮',p:100}],bought:0,spent:{}};
+try{const r=localStorage.getItem('hunter-sys');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem('hunter-sys',JSON.stringify(S))}catch(e){};fileSave();cloudSave()};
+const need=l=>Math.round(100*Math.pow(l,1.4));
+function lvl(x){let l=1;while(x>=need(l)){x-=need(l);l++}return[l,x,need(l)]}
+const RK=l=>l<5?'E':l<10?'D':l<20?'C':l<30?'B':l<45?'A':'S';
+const TT=l=>['Newbie Hunter','Awakened','Dungeon Crawler','Shadow Initiate','Elite Hunter','Shadow Monarch'][['E','D','C','B','A','S'].indexOf(RK(l))];
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const wd=d=>(d.getDay()+6)%7;
+let off=0;
+function monday(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-wd(d)+off*7);return d}
+let sel=key(new Date());
+const dateOf=k=>{const[y,m,d]=k.split('-');return new Date(y,m-1,d)};
+function onDay(t,k){const d=dateOf(k);return t.r==='daily'||(t.r==='once'&&t.date===k)||(t.r==='weekly'&&t.wd===wd(d))}
+const tasksOn=k=>S.tasks.filter(t=>onDay(t,k)).sort((a,b)=>a.s-b.s);
+const isDone=(t,k)=>!!S.done[t.id+'|'+k];
+const tm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const mins=v=>{const[h,m]=v.split(':');return +h*60+ +m};
+function wk(n){off+=n;const m=monday();sel=key(m);render()}
+function toggle(id,k){
+ const t=S.tasks.find(x=>x.id===id),dk=id+'|'+k;derive();const before=lvl(D.xp)[0];
+ if(S.done[dk])delete S.done[dk];else S.done[dk]={x:t.x,c:t.c,d:k,n:t.n,t:Date.now()};
+ derive();const after=lvl(D.xp)[0];save();render();
+ if(after>before)pop('LEVEL UP!','You are now Level '+after+' · Rank '+RK(after)+' · '+TT(after));
+}
+function pop(a,b){$('tm').textContent=a;$('tp').textContent=b;$('toast').classList.add('show')}
+function del(id){S.tasks=S.tasks.filter(t=>t.id!==id);save();render()}
+function buy(i){const q=S.shop[i];derive();if(D.gold<q.p){pop("NOT ENOUGH GOLD","Complete more quests!");return}S.spent[Date.now()]={n:q.n,p:q.p};save();render();pop("REWARD CLAIMED",q.n)}
+function delShop(i){S.shop.splice(i,1);save();render()}
+function arc(cx,cy,r1,r2,a1,a2){
+ const p=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+ const L=a2-a1>Math.PI?1:0,[x1,y1]=p(r2,a1),[x2,y2]=p(r2,a2),[x3,y3]=p(r1,a2),[x4,y4]=p(r1,a1);
+ return `M${x1} ${y1}A${r2} ${r2} 0 ${L} 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 ${L} 0 ${x4} ${y4}Z`}
+function clock(){
+ let h='<circle cx="160" cy="160" r="140" fill="#080d1b" stroke="#1f3a6e" stroke-width="2"/><circle cx="160" cy="160" r="92" fill="none" stroke="#12244a"/>';
+ for(let i=0;i<24;i++){const a=i/24*2*Math.PI,x1=160+132*Math.sin(a),y1=160-132*Math.cos(a),x2=160+(i%3?126:120)*Math.sin(a),y2=160-(i%3?126:120)*Math.cos(a);
+  h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3b9cff" stroke-opacity=".6"/>`;
+  if(i%3==0)h+=`<text x="${160+150*Math.sin(a)}" y="${160-150*Math.cos(a)+4}" text-anchor="middle">${i}</text>`}
+ const ts=tasksOn(sel);
+ ts.forEach((t,i)=>{let a=t.s,b=t.e;if(b<=a)b+=1440;if(b-a>=1440)b=a+1439;const lane=i%2,r1=96+lane*20,r2=r1+18,d=isDone(t,sel);
+  h+=`<path d="${arc(160,160,r1,r2,a/1440*2*Math.PI,b/1440*2*Math.PI)}" fill="${COL[t.c]}" fill-opacity="${d?.25:.75}" stroke="#fff" stroke-opacity=".5"><title>${t.n} ${tm(t.s)}–${tm(t.e)}</title></path>`;
+  const m=((a+b)/2)/1440*2*Math.PI,rr=r1+9;
+  if(b-a>=75)h+=`<text x="${160+rr*Math.sin(m)}" y="${160-rr*Math.cos(m)+3}" text-anchor="middle" style="fill:#000;font-size:9px;font-weight:700">${t.n.slice(0,9)}</text>`});
+ if(sel===key(new Date())){const n=new Date(),m=(n.getHours()*60+n.getMinutes())/1440*2*Math.PI;
+  h+=`<line x1="160" y1="160" x2="${160+126*Math.sin(m)}" y2="${160-126*Math.cos(m)}" stroke="#fff" stroke-width="2"/><circle cx="160" cy="160" r="4" fill="#fff"/>`}
+ const d=dateOf(sel),i=wd(d);
+ h+=`<text x="160" y="150" text-anchor="middle" style="fill:#fff;font-size:20px;font-weight:800">${DAYS[i]}</text><text x="160" y="170" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text><text x="160" y="186" text-anchor="middle">${ts.length} quests</text>`;
+ $('clk').innerHTML=h}
+function streak(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!D.log[key(d)])d.setDate(d.getDate()-1);while(D.log[key(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
+function render(){derive();
+ const[l,x,n]=lvl(D.xp);
+ $('rk').textContent=RK(l);$('nm').textContent=S.name+' · LV '+l;$('ttl').textContent='['+TT(l)+']';
+ $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level';
+ $('st').textContent=streak();$('gd').textContent=Math.max(0,D.gold);
+ $('stats').innerHTML=Object.keys(D.stats).map(k=>`<div class="stat" style="border-color:${COL[k]}55">${k}<b style="color:${COL[k]}">${D.stats[k]}</b></div>`).join('');
+ const m=monday(),e=new Date(m);e.setDate(e.getDate()+6);
+ $('wl').textContent=m.getDate()+'/'+(m.getMonth()+1)+' – '+e.getDate()+'/'+(e.getMonth()+1);
+ let w='';const today=key(new Date());
+ for(let i=0;i<7;i++){const d=new Date(m);d.setDate(m.getDate()+i);const k=key(d),ts=tasksOn(k),dn=ts.filter(t=>isDone(t,k)).length,T=TH[i];
+  w+=`<div class="day ${k===sel?'sel':''} ${k===today?'today':''}" onclick="sel='${k}';render()" style="background:radial-gradient(circle at 70% 25%,#ffffff40,transparent 40%),linear-gradient(160deg,${T[2]})"><span class="em">${T[0]}</span><span class="dn">${DAYS[i]} ${d.getDate()}</span><span class="th">${T[1]}</span><span class="pr">${dn}/${ts.length} ✔</span></div>`}
+ $('week').innerHTML=w;
+ clock();
+ const d=dateOf(sel),ts=tasksOn(sel);
+ $('qh').textContent=DAYS[wd(d)]+' Quests';$('ch').textContent='Chrono Gate · '+DAYS[wd(d)];
+ $('tl').innerHTML=ts.length?ts.map(t=>`<div class="task ${isDone(t,sel)?'done':''}" style="--c:${COL[t.c]}"><button class="chk" onclick="toggle(${t.id},'${sel}')">${isDone(t,sel)?'✔':''}</button><div class="t">${t.n}<small>${tm(t.s)} – ${tm(t.e)} · ${t.c} · ${t.r==='once'?'one-time':t.r}</small></div><span class="xp">+${t.x} XP</span><button class="sm" onclick="del(${t.id})">✕</button></div>`).join(''):'<div class="mut">No quests for this day. Add one — the System awaits.</div>';
+ let wp='';
+ [['Daily habits','daily'],['Weekly quests','weekly'],['One-time','once']].forEach(([lb,r])=>{
+  S.tasks.filter(t=>t.r===r).forEach(t=>{let tot=0,dn=0;for(let i=0;i<7;i++){const dd=new Date(m);dd.setDate(m.getDate()+i);const k=key(dd);if(onDay(t,k)){tot++;if(isDone(t,k))dn++}}
+   if(tot)wp+=`<div class="wq">${t.n} <span class="mut">(${lb}) ${dn}/${tot}</span><div class="bar" style="height:8px"><i style="width:${dn/tot*100}%;background:${COL[t.c]}"></i></div></div>`})});
+ $('wp').innerHTML=wp||'<div class="mut">Add habits to see weekly progress.</div>';
+ $('sh').innerHTML=S.shop.map((s,i)=>`<div class="shop"><span>${s.n}</span><span><span class="gold">🪙 ${s.p}</span> <button class="sm" onclick="buy(${i})">Claim</button> <button class="sm" onclick="delShop(${i})">✕</button></span></div>`).join('');perf();
+}
+$('f').onsubmit=e=>{e.preventDefault();
+ S.tasks.push({id:Date.now(),n:$('tt').value.trim(),s:mins($('ts').value),e:mins($('te').value),c:$('tc').value,r:$('tr').value,x:+$('tx').value,date:sel,wd:wd(dateOf(sel))});
+ $('tt').value='';save();render()};
+$('sf').onsubmit=e=>{e.preventDefault();S.shop.push({n:$('sn').value,p:+$('sp').value});$('sn').value='';$('sp').value='';save();render()};
+$('nm').onclick=()=>{const n=prompt('Hunter name?',S.name);if(n){S.name=n.slice(0,20);save();render()}};
+setInterval(()=>{if(sel===key(new Date()))clock()},60000);
+let D={};
+function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{}};
+ for(const k in S.done){const c=S.done[k];D.xp+=c.x;D.gold+=Math.round(c.x/2);D.stats[c.c]++;D.log[c.d]=(D.log[c.d]||0)+1}
+ for(const k in S.spent)D.gold-=S.spent[k].p}
+function mergeIn(o){o=o.data||o;let n=0;
+ (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
+ for(const k in o.done||{})if(!S.done[k]){S.done[k]=o.done[k];n++}
+ for(const k in o.spent||{})if(!S.spent[k]){S.spent[k]=o.spent[k];n++}
+ (o.shop||[]).forEach(q=>{if(!S.shop.some(x=>x.n===q.n)){S.shop.push(q);n++}});
+ return n}
+async function exp(){const txt=JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1);
+ const f=new File([txt],"hunter-backup-"+key(new Date())+".json",{type:"application/json"});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==="AbortError")return}
+ const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}
+$("imp").onchange=async e=>{let n=0,bad=0;
+ for(const f of e.target.files){try{n+=mergeIn(JSON.parse(await f.text()))}catch(x){bad++}}
+ e.target.value="";save();render();pop(n?"DATA MERGED":"NOTHING NEW",n+" new items added"+(bad?" · "+bad+" file(s) unreadable":""))};
+const FN="hunter-system-data.json";let dir=null,ft;
+const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("hs",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);q.onsuccess=()=>{const s=q.result.transaction("k",m==="get"?"readonly":"readwrite").objectStore("k"),rq=m==="get"?s.get("dir"):s.put(v,"dir");rq.onsuccess=()=>r(rq.result);rq.onerror=()=>r(null)}}catch(x){r(null)}});
+const fst=t=>{$("fs").textContent=t};
+async function readMerge(){try{const fh=await dir.getFileHandle(FN);mergeIn(JSON.parse(await(await fh.getFile()).text()))}catch(e){}}
+function fileSave(){if(!dir)return;clearTimeout(ft);ft=setTimeout(async()=>{try{const fh=await dir.getFileHandle(FN,{create:true}),w=await fh.createWritable();
+ await w.write(JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1));await w.close();fst("✅ Auto-saved to folder \""+dir.name+"\" at "+new Date().toLocaleTimeString())}catch(e){fst("⚠ Folder save failed — click Reconnect folder")}},400)}
+async function pick(){if(!window.showDirectoryPicker){pop("NOT SUPPORTED","This browser cannot write to folders (iPhone Safari cannot). Use Export / Import.");return}
+ try{dir=await showDirectoryPicker({mode:"readwrite",id:"hunter"});await idb("put",dir);await readMerge();save();render()}catch(e){}}
+async function recon(){if(!window._h){pop("NO FOLDER","Choose a folder first.");return}
+ try{if(await window._h.requestPermission({mode:"readwrite"})==="granted"){dir=window._h;await readMerge();save();render()}}catch(e){}}
+async function initFolder(){if(!window.showDirectoryPicker){fst("📱 This browser cannot auto-save to a folder. Use Export → Save to Files, then Import to merge.");return}
+ const h=await idb("get");if(!h){fst("No auto-save folder chosen yet.");return}
+ try{if(await h.queryPermission({mode:"readwrite"})==="granted"){dir=h;await readMerge();save();render()}else{window._h=h;fst("Folder remembered — click Reconnect folder to resume auto-save.")}}catch(e){fst("Choose the folder again.")}}
+let pr="week",po=0;
+function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,idx,title;
+ if(pr==="day"){start=new Date(now);start.setDate(start.getDate()+po);end=start;labels=[...Array(24).keys()].map(String);idx=c=>c.d===key(start)?new Date(c.t||0).getHours():-1;title=start.toDateString()}
+ else if(pr==="week"){start=new Date(now);start.setDate(start.getDate()-wd(start)+po*7);end=new Date(start);end.setDate(end.getDate()+6);labels=DAYS.map(x=>x.slice(0,2));idx=c=>{const f=Math.round((dateOf(c.d)-start)/864e5);return f>=0&&f<7?f:-1};title=key(start)+" → "+key(end)}
+ else if(pr==="month"){start=new Date(now.getFullYear(),now.getMonth()+po,1);end=new Date(start.getFullYear(),start.getMonth()+1,0);labels=[...Array(end.getDate())].map((_,i)=>String(i+1));idx=c=>{const d=dateOf(c.d);return d>=start&&d<=end?d.getDate()-1:-1};title=start.toLocaleString("en",{month:"long",year:"numeric"})}
+ else{start=new Date(now.getFullYear()+po,0,1);end=new Date(start.getFullYear(),11,31);labels="JFMAMJJASOND".split("");idx=c=>dateOf(c.d).getFullYear()===start.getFullYear()?dateOf(c.d).getMonth():-1;title=String(start.getFullYear())}
+ const n=labels.length,xs=Array(n).fill(0),cs=Array(n).fill(0),cat={STR:0,INT:0,VIT:0,AGI:0,SEN:0};
+ Object.values(S.done).forEach(c=>{const i=idx(c);if(i>=0){xs[i]+=c.x;cs[i]++;cat[c.c]+=c.x}});
+ let sched=0;for(let d=new Date(start);d<=end&&d<=now;d.setDate(d.getDate()+1))sched+=tasksOn(key(d)).length;
+ const tx=xs.reduce((a,b)=>a+b,0),tq=cs.reduce((a,b)=>a+b,0),best=xs.indexOf(Math.max(...xs));
+ $("pt").innerHTML=["day","week","month","year"].map(r=>`<button class="${r===pr?"on":""}" onclick="pr='${r}';po=0;perf()">${r.toUpperCase()}</button>`).join("");
+ $("pl").textContent=title;
+ $("pk").innerHTML=[["XP",tx],["Quests",tq],["Done %",sched?Math.min(100,Math.round(tq/sched*100))+"%":"–"],["Best",tx?labels[best]:"–"]].map(a=>`<div class="stat">${a[0]}<b>${a[1]}</b></div>`).join("");
+ const W=600,H=190,B=24,mx=Math.max(10,...xs),bw=W/n;
+ let g=`<defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#1a6bff"/></linearGradient></defs><text x="2" y="12">${mx} XP</text><line x1="0" x2="${W}" y1="${H-B}" y2="${H-B}" stroke="#1f3a6e"/>`;
+ xs.forEach((v,i)=>{const h=v/mx*(H-B-20);g+=`<rect x="${i*bw+bw*.15}" y="${H-B-h}" width="${bw*.7}" height="${v?Math.max(h,2):0}" rx="2" fill="url(#gr)"><title>${labels[i]}: ${v} XP · ${cs[i]} quests</title></rect>`;
+  if(n<=12||i%3==0)g+=`<text x="${i*bw+bw/2}" y="${H-8}" text-anchor="middle">${labels[i]}</text>`});
+ $("pc").innerHTML=g;
+ $("pcat").innerHTML=Object.keys(cat).map(k=>`<div class="mut">${k} · ${cat[k]} XP</div><div class="cb" style="width:${Math.max(2,tx?cat[k]/tx*100:0)}%;background:${COL[k]}"></div>`).join("");
+ let h="";const st=new Date(now);st.setDate(st.getDate()-wd(st)-16*7);
+ for(let i=0;i<119;i++){const d=new Date(st);d.setDate(st.getDate()+i);if(d>now){h+="<i></i>";continue}const c=D.log[key(d)]||0;h+=`<i title="${key(d)}: ${c} quests" style="background:${c?`rgba(59,156,255,${Math.min(1,.2+c*.2)})`:"#0a1020"}"></i>`}
+ $("hm").innerHTML=h}
+
+const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct;
+const cst=t=>{$("cs").textContent=t};
+const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{}});
+async function push(){const r=await sb.from("hunter_data").upsert({user_id:uid,data:S,updated_at:new Date().toISOString()});cst(r.error?"⚠ Cloud sync failed: "+r.error.message:"☁ Synced "+new Date().toLocaleTimeString())}
+function cloudSave(){if(!sb||!uid)return;clearTimeout(ct);ct=setTimeout(push,800)}
+async function pull(){const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
+ if(r.error){cst("⚠ Could not load cloud data: "+r.error.message);return}
+ if(r.data&&r.data.data){mergeIn(r.data.data);if(S.name==="Hunter"&&r.data.data.name)S.name=r.data.data.name}
+ save();render()}
+async function enter(u){uid=u.id;
+ try{const old=localStorage.getItem("hunter-uid");if(old&&old!==uid){Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,BLANK())}localStorage.setItem("hunter-uid",uid)}catch(e){}
+ $("auth").style.display="none";$("lo").style.display="inline-block";cst("☁ Logged in as "+u.email);await pull()}
+async function auth(m){const e=$("em").value.trim(),p=$("pw").value;if(!e||p.length<6){$("am").textContent="Enter an email and a password of 6+ characters.";return}
+ $("am").textContent="Please wait...";
+ const r=m==="up"?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
+ if(r.error){$("am").textContent=r.error.message;return}
+ if(!r.data.session){$("am").textContent="Account created. Check your email to confirm, then press Log in.";return}
+ await enter(r.data.user)}
+async function out(){try{clearTimeout(ct);await push();await sb.auth.signOut();localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid")}catch(e){}location.reload()}
+async function initAuth(){if(!CFG){cst("Local mode (no login). Add Supabase values at the top of the script to enable accounts.");return}
+ try{sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){cst("⚠ Supabase failed to load");return}
+ const r=await sb.auth.getSession();
+ if(r.data.session)enter(r.data.session.user);else $("auth").style.display="grid";
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid)pull()})}
+render();initFolder();initAuth();
+</script></body></html>
