@@ -80,9 +80,9 @@ input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);bo
    <input class="full" id="tt" placeholder="New quest name..." required>
    <div><div class="mut">From</div><input type="time" id="ts" value="09:00" required></div>
    <div><div class="mut">To</div><input type="time" id="te" value="10:00" required></div>
-   <select id="tc"><option value="STR">💪 Fitness (STR)</option><option value="INT">📚 Study (INT)</option><option value="VIT">🍎 Health (VIT)</option><option value="AGI">💼 Work (AGI)</option><option value="SEN">🧘 Mind (SEN)</option></select>
-   <select id="tr"><option value="once">This day only</option><option value="daily">Every day (habit)</option><option value="weekly">Every week (this weekday)</option></select>
-   <select id="tx" class="full"><option value="10">Easy – 10 XP</option><option value="25" selected>Normal – 25 XP</option><option value="50">Hard – 50 XP</option><option value="100">Boss – 100 XP</option></select>
+   <select id="tc"><option value="STR">💪 Fitness (STR)</option><option value="INT">📚 Study (INT)</option><option value="VIT">🍎 Health (VIT)</option><option value="AGI">💼 Work (AGI)</option><option value="SEN">🧘 Mind (SEN)</option><option value="__new">＋ New category…</option></select>
+   <select id="tr"><option value="once">This day only</option><option value="daily">Every day (habit)</option><option value="weekly">Every week (this weekday)</option><option value="__new">＋ Custom days…</option></select>
+   <select id="tx" class="full"><option value="10">Easy – 10 XP</option><option value="25" selected>Normal – 25 XP</option><option value="50">Hard – 50 XP</option><option value="100">Boss – 100 XP</option><option value="__new">＋ Custom XP…</option></select>
    <button class="full">＋ Add Quest</button>
   </form>
  </div>
@@ -114,7 +114,7 @@ const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
 const TH=[['🌙','Moonlit Gate','#1b1f5e,#6a3fb5'],['🔥','Flame Dungeon','#5e1010,#ff7a1a'],['🌲','Shadow Forest','#07281c,#1f8f5a'],['⚡','Storm Peak','#101a3a,#2f7bff'],['💎','Crystal Cavern','#0b3a4a,#4fe3e0'],['🏰','Crimson Castle','#3a0a1c,#c2255c'],['☁️','Sky Citadel','#1b3a6b,#9ad0ff']];
 const COL={STR:'#ff5d5d',INT:'#5da8ff',VIT:'#5dff9a',AGI:'#ffd24a',SEN:'#c27bff'};
 const $=id=>document.getElementById(id);
-let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:'Watch an episode 🍿',p:40},{n:'Sweet treat 🍰',p:60},{n:'Gaming hour 🎮',p:100}],bought:0,spent:{}};
+let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:'Watch an episode 🍿',p:40},{n:'Sweet treat 🍰',p:60},{n:'Gaming hour 🎮',p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]};
 try{const r=localStorage.getItem('hunter-sys');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem('hunter-sys',JSON.stringify(S))}catch(e){};fileSave();cloudSave()};
 const need=l=>Math.round(100*Math.pow(l,1.4));
@@ -127,7 +127,7 @@ let off=0;
 function monday(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-wd(d)+off*7);return d}
 let sel=key(new Date());
 const dateOf=k=>{const[y,m,d]=k.split('-');return new Date(y,m-1,d)};
-function onDay(t,k){const d=dateOf(k);return t.r==='daily'||(t.r==='once'&&t.date===k)||(t.r==='weekly'&&t.wd===wd(d))}
+function onDay(t,k){const d=dateOf(k);return t.r==='daily'||(t.r==='once'&&t.date===k)||(t.r==='weekly'&&t.wd===wd(d))||(t.r==='days'&&t.days.includes(wd(d)))}
 const tasksOn=k=>S.tasks.filter(t=>onDay(t,k)).sort((a,b)=>a.s-b.s);
 const isDone=(t,k)=>!!S.done[t.id+'|'+k];
 const tm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -163,7 +163,7 @@ function clock(){
  h+=`<text x="160" y="150" text-anchor="middle" style="fill:#fff;font-size:20px;font-weight:800">${DAYS[i]}</text><text x="160" y="170" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text><text x="160" y="186" text-anchor="middle">${ts.length} quests</text>`;
  $('clk').innerHTML=h}
 function streak(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!D.log[key(d)])d.setDate(d.getDate()-1);while(D.log[key(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
-function render(){derive();
+function render(){S.cats.forEach(c=>COL[c.k]=c.c);derive();fillOpts();
  const[l,x,n]=lvl(D.xp);
  $('rk').textContent=RK(l);$('nm').textContent=S.name+' · LV '+l;$('ttl').textContent='['+TT(l)+']';
  $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level';
@@ -178,29 +178,54 @@ function render(){derive();
  clock();
  const d=dateOf(sel),ts=tasksOn(sel);
  $('qh').textContent=DAYS[wd(d)]+' Quests';$('ch').textContent='Chrono Gate · '+DAYS[wd(d)];
- $('tl').innerHTML=ts.length?ts.map(t=>`<div class="task ${isDone(t,sel)?'done':''}" style="--c:${COL[t.c]}"><button class="chk" onclick="toggle(${t.id},'${sel}')">${isDone(t,sel)?'✔':''}</button><div class="t">${t.n}<small>${tm(t.s)} – ${tm(t.e)} · ${t.c} · ${t.r==='once'?'one-time':t.r}</small></div><span class="xp">+${t.x} XP</span><button class="sm" onclick="del(${t.id})">✕</button></div>`).join(''):'<div class="mut">No quests for this day. Add one — the System awaits.</div>';
+ $('tl').innerHTML=ts.length?ts.map(t=>`<div class="task ${isDone(t,sel)?'done':''}" style="--c:${COL[t.c]}"><button class="chk" onclick="toggle(${t.id},'${sel}')">${isDone(t,sel)?'✔':''}</button><div class="t">${t.n}<small>${tm(t.s)} – ${tm(t.e)} · ${t.c} · ${t.r==='once'?'one-time':t.r==='days'?t.days.map(i=>DAYS[i]).join('·'):t.r}</small></div><span class="xp">+${t.x} XP</span><button class="sm" onclick="del(${t.id})">✕</button></div>`).join(''):'<div class="mut">No quests for this day. Add one — the System awaits.</div>';
  let wp='';
- [['Daily habits','daily'],['Weekly quests','weekly'],['One-time','once']].forEach(([lb,r])=>{
+ [['Daily habits','daily'],['Weekly quests','weekly'],['Custom days','days'],['One-time','once']].forEach(([lb,r])=>{
   S.tasks.filter(t=>t.r===r).forEach(t=>{let tot=0,dn=0;for(let i=0;i<7;i++){const dd=new Date(m);dd.setDate(m.getDate()+i);const k=key(dd);if(onDay(t,k)){tot++;if(isDone(t,k))dn++}}
    if(tot)wp+=`<div class="wq">${t.n} <span class="mut">(${lb}) ${dn}/${tot}</span><div class="bar" style="height:8px"><i style="width:${dn/tot*100}%;background:${COL[t.c]}"></i></div></div>`})});
  $('wp').innerHTML=wp||'<div class="mut">Add habits to see weekly progress.</div>';
  $('sh').innerHTML=S.shop.map((s,i)=>`<div class="shop"><span>${s.n}</span><span><span class="gold">🪙 ${s.p}</span> <button class="sm" onclick="buy(${i})">Claim</button> <button class="sm" onclick="delShop(${i})">✕</button></span></div>`).join('');perf();
 }
+const PAL=['#ff8ad8','#4fe3e0','#ff9f43','#c3f73a','#e2e8f0','#b08968'];
+function fillOpts(){const fill=(id,items)=>{const s=$(id),v=s.value,nw=s.querySelector('[value=__new]');s.querySelectorAll('.cu').forEach(o=>o.remove());
+  items.forEach(([val,lab])=>{const o=document.createElement('option');o.className='cu';o.value=val;o.textContent=lab;s.insertBefore(o,nw)});
+  if([...s.options].some(o=>o.value===v))s.value=v};
+ fill('tc',S.cats.map(c=>[c.k,c.k]));fill('tx',S.xpo.map(x=>[''+x,'Custom – '+x+' XP']));fill('tr',S.rep.map(d=>['days:'+d,'Every '+d.map(i=>DAYS[i]).join(' · ')]))}
+$('tc').onchange=function(){if(this.value!=='__new')return;
+ const n=(prompt('New category name (max 12 characters, emoji welcome):')||'').replace(/[<>&"'`]/g,'').trim().slice(0,12);
+ if(!n){this.selectedIndex=0;return}
+ if(!COL.hasOwnProperty(n)){S.cats.push({k:n,c:PAL[S.cats.length%PAL.length]});save()}
+ render();$('tc').value=n};
+$('tx').onchange=function(){if(this.value!=='__new')return;
+ const x=Math.round(+prompt('How much XP for this quest? (1–1000)'));
+ if(!(x>=1&&x<=1000)){this.value='25';return}
+ if(!['10','25','50','100'].includes(''+x)&&!S.xpo.includes(x)){S.xpo.push(x);S.xpo.sort((a,b)=>a-b);save()}
+ render();$('tx').value=''+x};
+$('tr').onchange=function(){if(this.value!=='__new')return;
+ const t=(prompt('Which days? Type day names, e.g. MON WED FRI — or WEEKDAYS / WEEKENDS')||'').toUpperCase();
+ const d=/WEEKDAY/.test(t)?[0,1,2,3,4]:/WEEKEND/.test(t)?[5,6]:DAYS.map((n,i)=>t.includes(n)?i:-1).filter(i=>i>=0);
+ if(!d.length){this.value='once';return}
+ if(d.length===7){this.value='daily';return}
+ if(!S.rep.some(r=>''+r===''+d)){S.rep.push(d);save()}
+ render();$('tr').value='days:'+d};
 $('f').onsubmit=e=>{e.preventDefault();
- S.tasks.push({id:Date.now(),n:$('tt').value.trim(),s:mins($('ts').value),e:mins($('te').value),c:$('tc').value,r:$('tr').value,x:+$('tx').value,date:sel,wd:wd(dateOf(sel))});
+ S.tasks.push({id:Date.now(),n:$('tt').value.trim(),s:mins($('ts').value),e:mins($('te').value),c:$('tc').value,r:$('tr').value.startsWith('days:')?'days':$('tr').value,days:$('tr').value.startsWith('days:')?$('tr').value.slice(5).split(',').map(Number):undefined,x:+$('tx').value,date:sel,wd:wd(dateOf(sel))});
  $('tt').value='';save();render()};
 $('sf').onsubmit=e=>{e.preventDefault();S.shop.push({n:$('sn').value,p:+$('sp').value});$('sn').value='';$('sp').value='';save();render()};
 $('nm').onclick=()=>{const n=prompt('Hunter name?',S.name);if(n){S.name=n.slice(0,20);save();render()}};
 setInterval(()=>{if(sel===key(new Date()))clock()},60000);
 let D={};
-function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{}};
- for(const k in S.done){const c=S.done[k];D.xp+=c.x;D.gold+=Math.round(c.x/2);D.stats[c.c]++;D.log[c.d]=(D.log[c.d]||0)+1}
+function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{}};S.cats.forEach(c=>D.stats[c.k]=0);
+ for(const k in S.done){const c=S.done[k];D.xp+=c.x;D.gold+=Math.round(c.x/2);D.stats[c.c]=(D.stats[c.c]||0)+1;D.log[c.d]=(D.log[c.d]||0)+1}
  for(const k in S.spent)D.gold-=S.spent[k].p}
 function mergeIn(o){o=o.data||o;let n=0;
  (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
  for(const k in o.done||{})if(!S.done[k]){S.done[k]=o.done[k];n++}
  for(const k in o.spent||{})if(!S.spent[k]){S.spent[k]=o.spent[k];n++}
  (o.shop||[]).forEach(q=>{if(!S.shop.some(x=>x.n===q.n)){S.shop.push(q);n++}});
+ (o.cats||[]).forEach(c=>{if(!S.cats.some(x=>x.k===c.k)){S.cats.push(c);n++}});
+ (o.xpo||[]).forEach(v=>{if(!S.xpo.includes(v)){S.xpo.push(v);n++}});
+ (o.rep||[]).forEach(v=>{if(!S.rep.some(x=>''+x===''+v)){S.rep.push(v);n++}});
  return n}
 async function exp(){const txt=JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1);
  const f=new File([txt],"hunter-backup-"+key(new Date())+".json",{type:"application/json"});
@@ -228,8 +253,8 @@ function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,
  else if(pr==="week"){start=new Date(now);start.setDate(start.getDate()-wd(start)+po*7);end=new Date(start);end.setDate(end.getDate()+6);labels=DAYS.map(x=>x.slice(0,2));idx=c=>{const f=Math.round((dateOf(c.d)-start)/864e5);return f>=0&&f<7?f:-1};title=key(start)+" → "+key(end)}
  else if(pr==="month"){start=new Date(now.getFullYear(),now.getMonth()+po,1);end=new Date(start.getFullYear(),start.getMonth()+1,0);labels=[...Array(end.getDate())].map((_,i)=>String(i+1));idx=c=>{const d=dateOf(c.d);return d>=start&&d<=end?d.getDate()-1:-1};title=start.toLocaleString("en",{month:"long",year:"numeric"})}
  else{start=new Date(now.getFullYear()+po,0,1);end=new Date(start.getFullYear(),11,31);labels="JFMAMJJASOND".split("");idx=c=>dateOf(c.d).getFullYear()===start.getFullYear()?dateOf(c.d).getMonth():-1;title=String(start.getFullYear())}
- const n=labels.length,xs=Array(n).fill(0),cs=Array(n).fill(0),cat={STR:0,INT:0,VIT:0,AGI:0,SEN:0};
- Object.values(S.done).forEach(c=>{const i=idx(c);if(i>=0){xs[i]+=c.x;cs[i]++;cat[c.c]+=c.x}});
+ const n=labels.length,xs=Array(n).fill(0),cs=Array(n).fill(0),cat=Object.fromEntries(Object.keys(COL).map(k=>[k,0]));
+ Object.values(S.done).forEach(c=>{const i=idx(c);if(i>=0){xs[i]+=c.x;cs[i]++;cat[c.c]=(cat[c.c]||0)+c.x}});
  let sched=0;for(let d=new Date(start);d<=end&&d<=now;d.setDate(d.getDate()+1))sched+=tasksOn(key(d)).length;
  const tx=xs.reduce((a,b)=>a+b,0),tq=cs.reduce((a,b)=>a+b,0),best=xs.indexOf(Math.max(...xs));
  $("pt").innerHTML=["day","week","month","year"].map(r=>`<button class="${r===pr?"on":""}" onclick="pr='${r}';po=0;perf()">${r.toUpperCase()}</button>`).join("");
@@ -247,7 +272,7 @@ function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,
 
 const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct;
 const cst=t=>{$("cs").textContent=t};
-const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{}});
+const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]});
 async function push(){const r=await sb.from("hunter_data").upsert({user_id:uid,data:S,updated_at:new Date().toISOString()});cst(r.error?"⚠ Cloud sync failed: "+r.error.message:"☁ Synced "+new Date().toLocaleTimeString())}
 function cloudSave(){if(!sb||!uid)return;clearTimeout(ct);ct=setTimeout(push,800)}
 async function pull(){const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
