@@ -270,29 +270,93 @@ function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,
  for(let i=0;i<119;i++){const d=new Date(st);d.setDate(st.getDate()+i);if(d>now){h+="<i></i>";continue}const c=D.log[key(d)]||0;h+=`<i title="${key(d)}: ${c} quests" style="background:${c?`rgba(59,156,255,${Math.min(1,.2+c*.2)})`:"#0a1020"}"></i>`}
  $("hm").innerHTML=h}
 
-const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct;
+const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct,channel=null,cloudDirty=false,cloudRevision=0,applyingCloud=false;
 const cst=t=>{$("cs").textContent=t};
 const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]});
-async function push(){const r=await sb.from("hunter_data").upsert({user_id:uid,data:S,updated_at:new Date().toISOString()});cst(r.error?"⚠ Cloud sync failed: "+r.error.message:"☁ Synced "+new Date().toLocaleTimeString())}
-function cloudSave(){if(!sb||!uid)return;clearTimeout(ct);ct=setTimeout(push,800)}
-async function pull(){const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
+function applyCloud(data){
+ if(!data||typeof data!=="object")return;
+ applyingCloud=true;
+ S=Object.assign(BLANK(),data);
+ try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}
+ fileSave();
+ render();
+ applyingCloud=false;
+}
+async function push(){
+ if(!sb||!uid||!cloudDirty)return;
+ clearTimeout(ct);
+ const snapshot=JSON.parse(JSON.stringify(S));
+ const r=await sb.from("hunter_data").upsert(
+  {user_id:uid,data:snapshot,updated_at:new Date().toISOString()},
+  {onConflict:"user_id"}
+ );
+ if(r.error){cst("⚠ Cloud sync failed: "+r.error.message);return}
+ cloudDirty=false;
+ cst("☁ Synced · "+new Date().toLocaleTimeString());
+}
+function cloudSave(){
+ if(!sb||!uid||applyingCloud)return;
+ cloudDirty=true;
+ clearTimeout(ct);
+ ct=setTimeout(push,700);
+}
+async function pull(){
+ if(!sb||!uid)return;
+ if(cloudDirty){await push();return}
+ const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
  if(r.error){cst("⚠ Could not load cloud data: "+r.error.message);return}
- if(r.data&&r.data.data){mergeIn(r.data.data);if(S.name==="Hunter"&&r.data.data.name)S.name=r.data.data.name}
- save();render()}
-async function enter(u){uid=u.id;
- try{const old=localStorage.getItem("hunter-uid");if(old&&old!==uid){Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,BLANK())}localStorage.setItem("hunter-uid",uid)}catch(e){}
- $("auth").style.display="none";$("lo").style.display="inline-block";cst("☁ Logged in as "+u.email);await pull()}
-async function auth(m){const e=$("em").value.trim(),p=$("pw").value;if(!e||p.length<6){$("am").textContent="Enter an email and a password of 6+ characters.";return}
+ if(r.data&&r.data.data){applyCloud(r.data.data);cst("☁ Cloud data loaded")}
+ else{cloudDirty=true;await push();cst("☁ New cloud profile created")}
+}
+function startRealtime(){
+ if(channel){sb.removeChannel(channel);channel=null}
+ channel=sb.channel("hunter-data-"+uid)
+  .on("postgres_changes",{event:"*",schema:"public",table:"hunter_data",filter:"user_id=eq."+uid},payload=>{
+   if(payload.new&&payload.new.data&&!cloudDirty){
+    applyCloud(payload.new.data);
+    cst("☁ Updated from another device · "+new Date().toLocaleTimeString());
+   }
+  })
+  .subscribe(status=>{if(status==="SUBSCRIBED")cst("☁ Live sync connected")});
+}
+async function enter(u){
+ uid=u.id;
+ try{
+  const old=localStorage.getItem("hunter-uid");
+  if(old&&old!==uid){S=BLANK();localStorage.setItem("hunter-sys",JSON.stringify(S))}
+  localStorage.setItem("hunter-uid",uid);
+ }catch(e){}
+ $("auth").style.display="none";$("lo").style.display="inline-block";
+ cst("☁ Connecting as "+u.email);
+ await pull();
+ startRealtime();
+}
+async function auth(m){
+ const e=$("em").value.trim(),p=$("pw").value;
+ if(!e||p.length<6){$("am").textContent="Enter an email and a password of 6+ characters.";return}
  $("am").textContent="Please wait...";
  const r=m==="up"?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
  if(r.error){$("am").textContent=r.error.message;return}
  if(!r.data.session){$("am").textContent="Account created. Check your email to confirm, then press Log in.";return}
- await enter(r.data.user)}
-async function out(){try{clearTimeout(ct);await push();await sb.auth.signOut();localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid")}catch(e){}location.reload()}
-async function initAuth(){if(!CFG){cst("Local mode (no login). Add Supabase values at the top of the script to enable accounts.");return}
+ await enter(r.data.user);
+}
+async function out(){
+ try{
+  clearTimeout(ct);
+  if(cloudDirty)await push();
+  if(channel)await sb.removeChannel(channel);
+  await sb.auth.signOut();
+  localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid");
+ }catch(e){}
+ location.reload();
+}
+async function initAuth(){
+ if(!CFG){cst("Local mode (no login). Add Supabase values at the top of the script to enable accounts.");return}
  try{sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){cst("⚠ Supabase failed to load");return}
  const r=await sb.auth.getSession();
- if(r.data.session)enter(r.data.session.user);else $("auth").style.display="grid";
- document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid)pull()})}
+ if(r.data.session)await enter(r.data.session.user);else $("auth").style.display="grid";
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid)pull()});
+ window.addEventListener("online",()=>{if(uid&&cloudDirty)push()});
+}
 render();initFolder();initAuth();
 </script></body></html>
