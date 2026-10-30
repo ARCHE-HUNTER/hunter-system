@@ -98,10 +98,26 @@ input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);bo
 <div class="stats" id="pk" style="grid-template-columns:repeat(4,1fr)"></div>
 <svg id="pc" viewBox="0 0 600 190" width="100%" style="margin-top:8px"></svg>
 <div id="pcat"></div><h2 style="margin-top:12px">Activity Heatmap (17 weeks)</h2><div id="hm"></div></div>
-<div class="panel"><h2>Data &amp; Sync</h2><div class="wide"><button onclick="pick()">📁 Choose auto-save folder</button><button onclick="recon()">🔄 Reconnect folder</button><button onclick="exp()">⬆ Export JSON</button><button onclick="$('imp').click()">⬇ Import &amp; merge</button></div>
+<div class="panel"><h2>Data &amp; Sync</h2><div class="wide"><button onclick="pick()">📁 Choose auto-save folder</button><button onclick="recon()">🔄 Reconnect folder</button><button onclick="exp()">⬆ Export JSON</button><button onclick="$('imp').click()">⬇ Import &amp; merge</button><button id="adminOpen" onclick="openAdmin()" style="display:none">🛡 Admin Panel</button></div>
 <input type="file" id="imp" accept=".json,application/json" multiple hidden>
 <p class="mut" id="fs"></p><p class="mut" id="cs"></p><button id="lo" onclick="out()" style="display:none">Log out</button>
 <p class="mut">Import only ADDS missing quests, completions and rewards — it never replaces or deletes what you already have. PC tip: pick a folder inside iCloud Drive / OneDrive / Dropbox, then import that same file on your iPhone (Files app). iPhone Safari cannot write to folders silently, so use Export → Save to Files there.</p></div>
+
+<div class="panel" id="adminPanel" style="display:none">
+ <div class="nav"><h2 style="margin:0">🛡 Admin Panel</h2><button class="sm" onclick="closeAdmin()">Close</button></div>
+ <p class="mut">Restricted administration. Changes are saved to the selected user's cloud record and recorded in the audit log.</p>
+ <div class="wide" style="align-items:end">
+  <div style="flex:1;min-width:220px"><div class="mut">Registered users</div><select id="adminUsers" onchange="adminLoadSelected()"><option value="">Choose a user…</option></select></div>
+  <button onclick="adminLoadUsers()">↻ Refresh users</button>
+ </div>
+ <p id="adminSummary" class="mut"></p>
+ <div class="mut">User data editor (JSON). XP is calculated from completion records in <code>done</code>; edit those records to correct XP.</div>
+ <textarea id="adminJson" spellcheck="false" style="width:100%;min-height:320px;margin:8px 0;background:#070c18;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font:12px/1.5 Consolas,monospace"></textarea>
+ <div class="wide"><button onclick="adminSaveUser()">Save changes to selected user</button><button onclick="adminLoadSelected()">Discard / reload</button></div>
+ <h2 style="margin-top:16px">Recent admin activity</h2><div id="adminAudit" class="mut">Loading audit history…</div>
+ <p class="mut">Never paste passwords, API keys, or service-role secrets into this editor. Only edit the selected user's Hunter System data.</p>
+</div>
+
 <div class="mut" style="text-align:center;padding:10px">Arise. Complete quests, earn XP, rise from E‑Rank to S‑Rank.</div>
 </div>
 <div id="toast" onclick="this.classList.remove('show')"><div id="tm">LEVEL UP!</div><p id="tp"></p></div>
@@ -319,6 +335,88 @@ function startRealtime(){
   })
   .subscribe(status=>{if(status==="SUBSCRIBED")cst("☁ Live sync connected")});
 }
+
+let hunterIsAdmin=false, adminSelectedUser=null;
+function adminStatus(msg){$("adminSummary").textContent=msg||""}
+async function checkHunterAdmin(){
+ hunterIsAdmin=false;
+ $("adminOpen").style.display="none";
+ if(!sb||!uid)return;
+ try{
+  const r=await sb.rpc("hunter_admin_is_admin");
+  if(r.error){console.warn("Admin permission check:",r.error.message);return}
+  hunterIsAdmin=r.data===true;
+  $("adminOpen").style.display=hunterIsAdmin?"inline-block":"none";
+ }catch(e){console.warn("Admin permission check failed",e)}
+}
+function openAdmin(){
+ if(!hunterIsAdmin){pop("ACCESS DENIED","Administrator permission is required.");return}
+ $("adminPanel").style.display="block";
+ $("adminPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ adminLoadUsers();
+ adminLoadAudit();
+}
+function closeAdmin(){$("adminPanel").style.display="none"}
+async function adminLoadUsers(){
+ if(!hunterIsAdmin)return;
+ adminStatus("Loading registered users…");
+ const r=await sb.rpc("hunter_admin_list_users");
+ if(r.error){adminStatus("Could not load users: "+r.error.message);return}
+ const sel=$("adminUsers"),previous=sel.value;
+ sel.innerHTML='<option value="">Choose a user…</option>';
+ (r.data||[]).forEach(u=>{
+  const o=document.createElement("option");
+  o.value=u.user_id;
+  o.textContent=(u.email||"(no email)")+" · "+u.user_id.slice(0,8);
+  sel.appendChild(o);
+ });
+ if(previous&&[...sel.options].some(o=>o.value===previous))sel.value=previous;
+ adminStatus((r.data||[]).length+" registered user(s). Select one to inspect or edit.");
+ if(sel.value)await adminLoadSelected();
+}
+async function adminLoadSelected(){
+ if(!hunterIsAdmin)return;
+ const id=$("adminUsers").value;
+ adminSelectedUser=id||null;
+ if(!id){$("adminJson").value="";adminStatus("Choose a user to inspect their data.");return}
+ adminStatus("Loading selected user's data…");
+ const r=await sb.rpc("hunter_admin_get_user_data",{p_target_user_id:id});
+ if(r.error){adminStatus("Could not load user data: "+r.error.message);return}
+ const data=r.data||{};
+ $("adminJson").value=JSON.stringify(data,null,2);
+ const xp=Object.values(data.done||{}).reduce((sum,c)=>sum+Number(c&&c.x||0),0);
+ const email=$("adminUsers").selectedOptions[0]?.textContent||id;
+ adminStatus(email+" · Derived XP: "+xp+" · Completion records: "+Object.keys(data.done||{}).length+" · Tasks: "+(data.tasks||[]).length);
+}
+async function adminSaveUser(){
+ if(!hunterIsAdmin||!adminSelectedUser){pop("SELECT A USER","Choose a user first.");return}
+ let data;
+ try{data=JSON.parse($("adminJson").value)}catch(e){pop("INVALID JSON","Fix the JSON syntax before saving.");return}
+ if(!data||typeof data!=="object"||Array.isArray(data)){pop("INVALID DATA","The user's data must be a JSON object.");return}
+ if(!confirm("Save these changes to the selected user's cloud data? This can overwrite their current progress."))return;
+ adminStatus("Saving changes…");
+ const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:data});
+ if(r.error){adminStatus("Save failed: "+r.error.message);return}
+ adminStatus("Changes saved. The user's device should receive the update through Realtime.");
+ await adminLoadSelected();
+ await adminLoadAudit();
+}
+async function adminLoadAudit(){
+ if(!hunterIsAdmin)return;
+ const r=await sb.rpc("hunter_admin_recent_audit");
+ const el=$("adminAudit");
+ if(r.error){el.textContent="Could not load audit history: "+r.error.message;return}
+ if(!r.data||!r.data.length){el.textContent="No administrative changes recorded yet.";return}
+ el.innerHTML="";
+ r.data.forEach(a=>{
+  const row=document.createElement("div");
+  row.style.cssText="padding:7px 0;border-bottom:1px solid var(--line)";
+  const d=new Date(a.created_at);
+  row.textContent=d.toLocaleString()+" · "+a.action+" · target "+String(a.target_user_id).slice(0,8);
+  el.appendChild(row);
+ });
+}
+
 async function enter(u){
  uid=u.id;
  try{
@@ -330,6 +428,7 @@ async function enter(u){
  cst("☁ Connecting as "+u.email);
  await pull();
  startRealtime();
+ await checkHunterAdmin();
 }
 async function auth(m){
  const e=$("em").value.trim(),p=$("pw").value;
@@ -346,7 +445,7 @@ async function out(){
   if(cloudDirty)await push();
   if(channel)await sb.removeChannel(channel);
   await sb.auth.signOut();
-  localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid");
+  localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid");hunterIsAdmin=false;$("adminOpen").style.display="none";closeAdmin();
  }catch(e){}
  location.reload();
 }
