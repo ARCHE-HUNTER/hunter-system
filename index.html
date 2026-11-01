@@ -115,9 +115,9 @@ input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);bo
   <button onclick="adminLoadUsers()">↻ Refresh users</button>
  </div>
  <p id="adminSummary" class="mut"></p>
- <div class="mut">User data editor (JSON). XP is calculated from completion records in <code>done</code>; edit those records to correct XP.</div>
+ <div id="admTools"></div><details style="margin-top:12px"><summary class="mut" style="cursor:pointer">Advanced: raw data editor (not needed for normal use)</summary><div class="mut">User data editor (JSON).</div>
  <textarea id="adminJson" spellcheck="false" style="width:100%;min-height:320px;margin:8px 0;background:#070c18;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font:12px/1.5 Consolas,monospace"></textarea>
- <div class="wide"><button onclick="adminSaveUser()">Save changes to selected user</button><button onclick="adminLoadSelected()">Discard / reload</button></div>
+ <div class="wide"><button onclick="adminSaveUser()">Save changes to selected user</button><button onclick="adminLoadSelected()">Discard / reload</button></div></details>
  <h2 style="margin-top:16px">Recent admin activity</h2><div id="adminAudit" class="mut">Loading audit history…</div>
  <p class="mut">Never paste passwords, API keys, or service-role secrets into this editor. Only edit the selected user's Hunter System data.</p>
 </div>
@@ -236,16 +236,16 @@ $('nm').onclick=()=>{const n=prompt('Hunter name?',S.name);if(n){S.name=n.slice(
 setInterval(()=>{if(sel===key(new Date()))clock()},60000);
 let D={};
 function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{},ev:{},missY:0,penY:0};S.cats.forEach(c=>D.stats[c.k]=0);
- const tk=key(new Date()),yk=key(new Date(Date.now()-864e5));
+ const tk=key(new Date()),yk=key(new Date(Date.now()-864e5)),B=S.base,lg={},ll={},add=(m,d,v)=>{m[d]=(m[d]||0)+v};
  if(!S.penFrom){S.penFrom=tk;try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}}
  const ev=(d,c)=>D.ev[d+"|"+c]||(D.ev[d+"|"+c]={d,c,g:0,l:0});
- for(const k in S.done){const c=S.done[k];D.gold+=Math.round(c.x/2);D.stats[c.c]=(D.stats[c.c]||0)+1;D.log[c.d]=(D.log[c.d]||0)+1;ev(c.d,c.c).g+=c.x}
+ for(const k in S.done){const c=S.done[k];D.gold+=Math.round(c.x/2);D.stats[c.c]=(D.stats[c.c]||0)+1;D.log[c.d]=(D.log[c.d]||0)+1;ev(c.d,c.c).g+=c.x;if(!B||c.d>B.d||(c.d===B.d&&c.t>B.t))add(lg,c.d,c.x)}
+ (S.adj||[]).forEach(a=>{if(a.x>0){ev(a.d,"ADM").g+=a.x;if(!B||a.t>B.t)add(lg,a.d,a.x)}else{ev(a.d,"ADM").l-=a.x;if(!B||a.t>B.t)add(ll,a.d,-a.x)}});
  S.tasks.forEach(t=>{const st=new Date(Math.max(t.id,dateOf(S.penFrom).getTime()));st.setHours(0,0,0,0);
-  for(let d=new Date(st);key(d)<tk;d.setDate(d.getDate()+1)){const k=key(d);if(onDay(t,k)&&!isDone(t,k)){ev(k,t.c).l+=t.x;if(k===yk){D.missY++;D.penY+=t.x}}}});
- for(const k in S.spent)D.gold-=S.spent[k].p;
+  for(let d=new Date(st);key(d)<tk;d.setDate(d.getDate()+1)){const k=key(d);if(onDay(t,k)&&!isDone(t,k)){ev(k,t.c).l+=t.x;if(!B||k>B.d)add(ll,k,t.x);if(k===yk){D.missY++;D.penY+=t.x}}}});
+ D.gold+=S.gadj||0;for(const k in S.spent)D.gold-=S.spent[k].p;
  const sr=series();D.xp=sr.length?sr[sr.length-1].c:0;
- const dm={};Object.values(D.ev).forEach(e=>{const r=dm[e.d]||(dm[e.d]={g:0,l:0});r.g+=e.g;r.l+=e.l});
- let L=1,p=0,ex=0;Object.keys(dm).sort().forEach(d=>{p+=dm[d].g;while(p>=need(L)+ex){p-=need(L)+ex;L++;ex=0}ex+=dm[d].l});
+ let L=B?B.lv:1,p=B?B.lp:0,ex=0;[...new Set([...Object.keys(lg),...Object.keys(ll)])].sort().forEach(d=>{p+=lg[d]||0;while(p>=need(L)+ex){p-=need(L)+ex;L++;ex=0}ex+=ll[d]||0});
  D.lv=L;D.lp=p;D.ex=ex;D.lreq=need(L)+ex}
 function mergeIn(o){o=o.data||o;let n=0;
  (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
@@ -391,12 +391,12 @@ async function adminLoadSelected(){
  if(!hunterIsAdmin)return;
  const id=$("adminUsers").value;
  adminSelectedUser=id||null;
- if(!id){$("adminJson").value="";adminStatus("Choose a user to inspect their data.");return}
+ if(!id){admData=null;admRender();$("adminJson").value="";adminStatus("Choose a user to inspect their data.");return}
  adminStatus("Loading selected user's data…");
  const r=await sb.rpc("hunter_admin_get_user_data",{p_target_user_id:id});
  if(r.error){adminStatus("Could not load user data: "+r.error.message);return}
  const data=r.data||{};
- $("adminJson").value=JSON.stringify(data,null,2);
+ $("adminJson").value=JSON.stringify(data,null,2);admData=data;admRender();
  const xp=Object.values(data.done||{}).reduce((sum,c)=>sum+Number(c&&c.x||0),0);
  const email=$("adminUsers").selectedOptions[0]?.textContent||id;
  adminStatus(email+" · Derived XP: "+xp+" · Completion records: "+Object.keys(data.done||{}).length+" · Tasks: "+(data.tasks||[]).length);
@@ -503,5 +503,36 @@ function market(){
  const ks=Object.keys(COL),bal={};
  $("cc").innerHTML=ks.map(k=>{const s=series(k),l=s[s.length-1];bal[k]=l?l.c:0;return `<div style="border:1px solid var(--line);border-radius:8px;padding:8px"><div style="color:${COL[k]};font-weight:700">${esc(LBL[k]||k)} <span class="mut">${l?l.c+" XP":""}</span></div>${candle(s,300,150)}</div>`}).join("");
  radar(ks,bal)}
+
+let admData=null,admKeys=[];
+function peek(data){const keep=S;S=Object.assign(BLANK(),JSON.parse(JSON.stringify(data)));try{derive();return{lv:D.lv,lp:D.lp,lreq:D.lreq,gold:D.gold,rank:RK(D.lv)}}finally{S=keep;derive()}}
+function admRender(){const el=$("admTools"),d=admData;if(!d){el.innerHTML="";return}
+ const i=peek(d),inp=(id,v,w)=>`<input id="${id}" value="${esc(v)}" style="width:${w}px">`,h=t=>`<h2 style="margin:14px 0 6px">${t}</h2>`;
+ admKeys=Object.keys(d.done||{}).sort((a,b)=>d.done[b].t-d.done[a].t).slice(0,12);
+ el.innerHTML=`<div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat">Level<b>${i.lv}</b></div><div class="stat">Rank<b>${i.rank}</b></div><div class="stat">XP bar<b style="font-size:14px">${i.lp}/${i.lreq}</b></div><div class="stat">Gold<b>${Math.max(0,i.gold)}</b></div></div>
+ ${h("Player name")}<div class="wide">${inp("aName",d.name||"Hunter",160)}<button onclick="admName()">Set name</button></div>
+ ${h("Level &amp; XP bar")}<div class="wide" style="align-items:center"><span class="mut">Level</span>${inp("aLv",i.lv,60)}<span class="mut">XP in bar</span>${inp("aLp",i.lp,70)}<button onclick="admLevel()">Apply</button></div>
+ ${h("Give / take XP &amp; gold")}<div class="wide" style="align-items:center">${inp("aXp","50",70)}<button onclick="admXp(1)">＋ Give XP</button><button onclick="admXp(-1)">− Take XP</button><span class="mut">Gold</span>${inp("aG",Math.max(0,i.gold),70)}<button onclick="admGold()">Set gold</button></div>
+ ${h("Quests ("+(d.tasks||[]).length+")")}${(d.tasks||[]).map((t,n)=>`<div class="wide" style="margin-bottom:6px;align-items:center">${inp("qn"+n,t.n,150)}${inp("qx"+n,t.x,55)}<span class="mut">XP · ${esc(t.c)} · ${esc(t.r)}</span><button class="sm" onclick="admQuestSave(${n})">Save</button><button class="sm" onclick="admQuestDel(${n})">Delete</button></div>`).join("")||'<div class="mut">No quests.</div>'}
+ ${h("Recent completions")}${admKeys.map((k,n)=>`<div class="wide" style="margin-bottom:4px;align-items:center"><span class="mut">${esc(d.done[k].d)} · ${esc(d.done[k].n)} · +${d.done[k].x} XP</span><button class="sm" onclick="admUndo(${n})">Remove</button></div>`).join("")||'<div class="mut">None.</div>'}
+ ${h("Other")}<div class="wide"><button onclick="admForgive()">Forgive all missed-quest penalties</button><button onclick="admReset()" style="border-color:#ff4d6d">Reset all progress</button></div>`}
+async function admPush(msg){if(!hunterIsAdmin||!adminSelectedUser)return;if(!confirm(msg+"\n\nApply this to the selected user now?"))return;
+ adminStatus("Saving…");const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:admData});
+ if(r.error){adminStatus("Save failed: "+r.error.message);return}
+ pop("DONE","Saved for this user.");await adminLoadSelected();await adminLoadAudit()}
+const anum=id=>Math.round(+$(id).value);
+function admName(){admData.name=$("aName").value.slice(0,20)||"Hunter";admPush("Change name")}
+function admLevel(){const L=anum("aLv"),q=anum("aLp");if(!(L>=1&&L<=500&&q>=0)){pop("INVALID","Level 1–500 and XP 0 or more.");return}
+ if(q>=need(L)){pop("TOO HIGH","XP in the bar must be below "+need(L)+" for level "+L+".");return}
+ admData.base={lv:L,lp:q,d:key(new Date()),t:Date.now()};admPush("Set level "+L+" with "+q+" XP in the bar")}
+function admXp(sg){const x=anum("aXp");if(!(x>0&&x<=100000)){pop("INVALID","Enter a positive number.");return}
+ (admData.adj=admData.adj||[]).push({d:key(new Date()),t:Date.now(),x:sg*x});admPush((sg>0?"Give ":"Take ")+x+" XP")}
+function admGold(){const g=anum("aG");if(!(g>=0))return;admData.gadj=(admData.gadj||0)+(g-peek(admData).gold);admPush("Set gold to "+g)}
+function admQuestSave(n){const t=admData.tasks[n],x=anum("qx"+n);if(!(x>=1&&x<=1000)){pop("INVALID","XP must be 1–1000.");return}t.n=$("qn"+n).value.trim().slice(0,60)||t.n;t.x=x;admPush("Update this quest")}
+function admQuestDel(n){admData.tasks.splice(n,1);admPush("Delete this quest")}
+function admUndo(n){delete admData.done[admKeys[n]];admPush("Remove this completion")}
+function admForgive(){admData.penFrom=key(new Date());admPush("Forgive all past missed-quest penalties")}
+function admReset(){if(!confirm("This erases ALL XP, completions, purchases and level changes for this user. Their quests are kept. Continue?"))return;
+ admData.done={};admData.spent={};admData.adj=[];delete admData.base;admData.gadj=0;admData.penFrom=key(new Date());admPush("RESET all progress")}
 render();initFolder();initAuth();
 </script></body></html>
