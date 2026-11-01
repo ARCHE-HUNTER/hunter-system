@@ -93,8 +93,8 @@ input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);bo
    <form id="sf" style="grid-template-columns:1fr 80px auto"><input id="sn" placeholder="Custom reward" required><input id="sp" type="number" min="1" placeholder="🪙" required><button>Add</button></form></div>
  </div>
 </div>
-<div class="panel"><div class="nav"><h2 style="margin:0">📈 XP Market</h2><div class="tabs" id="mr" style="margin:0"></div></div>
-<p class="mut">Each day is a candle: green = you gained XP, red = missed quests cost you XP at day end.</p><div id="mk"></div>
+<div class="panel"><div class="nav"><h2 style="margin:0">📈 XP Chart</h2><div class="tabs" id="mr" style="margin:0"></div></div>
+<p class="mut">The line goes up when you gain XP and down when missed quests cost you XP at day end.</p><div id="mk"></div>
 <h2 style="margin-top:14px">Hunter Radar</h2><div id="rd"></div>
 <h2 style="margin-top:14px">Category Charts</h2><div id="cc" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div></div>
 <div class="panel"><h2>Performance</h2><div class="tabs" id="pt"></div>
@@ -479,11 +479,12 @@ function series(cat){const m={};Object.values(D.ev).forEach(e=>{if(cat&&e.c!==ca
  if(ds.length){const t1=new Date();t1.setHours(0,0,0,0);for(let d=dateOf(ds[0]);d<=t1;d.setDate(d.getDate()+1)){const k=key(d),r=m[k]||{g:0,l:0},o=b,hi=o+r.g;b=Math.max(0,hi-r.l);out.push({d:k,o,h:hi,l:Math.min(o,b),c:b,g:r.g,ls:r.l})}}
  return out}
 function candle(s,W,H){s=mrg?s.slice(-mrg):s;if(!s.length)return '<div class="mut">No data yet — complete some quests.</div>';
- const L=8,Rr=44,T=10,B=18,pw=W-L-Rr,ph=H-T-B;let mx=Math.max(...s.map(c=>c.h),10),mn=Math.min(...s.map(c=>c.l),0);if(mx===mn)mx=mn+10;
- const y=v=>T+ph-(v-mn)/(mx-mn)*ph,bw=pw/s.length;let g="";
- for(let i=0;i<=4;i++){const v=mn+(mx-mn)*i/4;g+=`<line x1="${L}" x2="${L+pw}" y1="${y(v)}" y2="${y(v)}" stroke="#1f3a6e" stroke-opacity=".6"/><text x="${L+pw+4}" y="${y(v)+4}">${Math.round(v)}</text>`}
- s.forEach((c,i)=>{const x=L+i*bw+bw/2,col=c.c>=c.o?"#26d07c":"#ff4d6d",y1=y(Math.max(c.o,c.c)),y2=y(Math.min(c.o,c.c));
-  g+=`<line x1="${x}" x2="${x}" y1="${y(c.h)}" y2="${y(c.l)}" stroke="${col}"/><rect x="${x-bw*.3}" y="${y1}" width="${bw*.6}" height="${Math.max(1.5,y2-y1)}" fill="${col}"><title>${c.d}: ${c.o} → ${c.c} XP (+${c.g} / −${c.ls})</title></rect>`});
+ const L=8,Rr=44,T=10,B=18,pw=W-L-Rr,ph=H-T-B,v=s.map(c=>c.c);let mx=Math.max(...v,10),mn=Math.min(...v,0);if(mx===mn)mx=mn+10;
+ const y=a=>T+ph-(a-mn)/(mx-mn)*ph,x=i=>s.length>1?L+i*pw/(s.length-1):L+pw/2;let g=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b9cff" stop-opacity=".35"/><stop offset="1" stop-color="#3b9cff" stop-opacity="0"/></linearGradient></defs>`;
+ for(let i=0;i<=4;i++){const a=mn+(mx-mn)*i/4;g+=`<line x1="${L}" x2="${L+pw}" y1="${y(a)}" y2="${y(a)}" stroke="#1f3a6e" stroke-opacity=".6"/><text x="${L+pw+4}" y="${y(a)+4}">${Math.round(a)}</text>`}
+ g+=`<path d="M${x(0)} ${y(mn)} ${v.map((a,i)=>"L"+x(i)+" "+y(a)).join(" ")} L${x(v.length-1)} ${y(mn)}Z" fill="url(#ga)"/>`;
+ for(let i=1;i<v.length;i++)g+=`<line x1="${x(i-1)}" y1="${y(v[i-1])}" x2="${x(i)}" y2="${y(v[i])}" stroke="${v[i]>=v[i-1]?"#26d07c":"#ff4d6d"}" stroke-width="2.5" stroke-linecap="round"/>`;
+ s.forEach((c,i)=>{g+=`<circle cx="${x(i)}" cy="${y(c.c)}" r="${s.length>45?1.5:3}" fill="${c.c>=c.o?"#26d07c":"#ff4d6d"}"><title>${c.d}: ${c.o} → ${c.c} XP (+${c.g} / −${c.ls})</title></circle>`});
  const l=s[s.length-1],ly=y(l.c);
  g+=`<line x1="${L}" x2="${L+pw}" y1="${ly}" y2="${ly}" stroke="#fff" stroke-dasharray="3 3" stroke-opacity=".5"/><rect x="${L+pw}" y="${ly-8}" width="${Rr-2}" height="16" fill="#3b9cff"/><text x="${L+pw+4}" y="${ly+4}" style="fill:#000;font-weight:700">${l.c}</text><text x="${L}" y="${H-4}">${s[0].d.slice(5)}</text><text x="${L+pw}" y="${H-4}" text-anchor="end">${l.d.slice(5)}</text>`;
  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`}
