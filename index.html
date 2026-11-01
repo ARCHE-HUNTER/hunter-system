@@ -94,7 +94,7 @@ input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);bo
  </div>
 </div>
 <div class="panel"><div class="nav"><h2 style="margin:0">📈 XP Chart</h2><div class="tabs" id="mr" style="margin:0"></div></div>
-<p class="mut">The line goes up when you gain XP and down when missed quests cost you XP at day end.</p><div id="mk"></div>
+<p class="mut">The line goes up when you gain XP and down when missed quests cost you XP at day end. Your level is never lowered: lost XP is added on top of what you need for your next level.</p><div id="mk"></div>
 <h2 style="margin-top:14px">Hunter Radar</h2><div id="rd"></div>
 <h2 style="margin-top:14px">Category Charts</h2><div id="cc" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div></div>
 <div class="panel"><h2>Performance</h2><div class="tabs" id="pt"></div>
@@ -138,7 +138,7 @@ let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:
 try{const r=localStorage.getItem('hunter-sys');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem('hunter-sys',JSON.stringify(S))}catch(e){};fileSave();cloudSave()};
 const need=l=>Math.round(100*Math.pow(l,1.4));
-function lvl(x){let l=1;while(x>=need(l)){x-=need(l);l++}return[l,x,need(l)]}
+function lvl(){return[D.lv,D.lp,D.lreq]}
 const RK=l=>l<5?'E':l<10?'D':l<20?'C':l<30?'B':l<45?'A':'S';
 const TT=l=>['Newbie Hunter','Awakened','Dungeon Crawler','Shadow Initiate','Elite Hunter','Shadow Monarch'][['E','D','C','B','A','S'].indexOf(RK(l))];
 const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -186,7 +186,7 @@ function streak(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!D.log[key(d
 function render(){S.cats.forEach(c=>COL[c.k]=c.c);derive();fillOpts();
  const[l,x,n]=lvl(D.xp);
  $('rk').textContent=RK(l);$('nm').textContent=S.name+' · LV '+l;$('ttl').textContent='['+TT(l)+']';
- $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level'+(D.missY?' · ⚠ missed yesterday: '+D.missY+' (−'+D.penY+' XP)':'');
+ $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level'+(D.ex?' (includes +'+D.ex+' from missed quests)':'')+(D.missY?' · ⚠ missed yesterday: '+D.missY+' quest(s), +'+D.penY+' XP added to your next level':'');
  $('st').textContent=streak();$('gd').textContent=Math.max(0,D.gold);
  $('stats').innerHTML=Object.keys(D.stats).map(k=>`<div class="stat" style="border-color:${COL[k]}55">${k}<b style="color:${COL[k]}">${D.stats[k]}</b></div>`).join('');
  const m=monday(),e=new Date(m);e.setDate(e.getDate()+6);
@@ -243,7 +243,10 @@ function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{},ev
  S.tasks.forEach(t=>{const st=new Date(Math.max(t.id,dateOf(S.penFrom).getTime()));st.setHours(0,0,0,0);
   for(let d=new Date(st);key(d)<tk;d.setDate(d.getDate()+1)){const k=key(d);if(onDay(t,k)&&!isDone(t,k)){ev(k,t.c).l+=t.x;if(k===yk){D.missY++;D.penY+=t.x}}}});
  for(const k in S.spent)D.gold-=S.spent[k].p;
- const sr=series();D.xp=sr.length?sr[sr.length-1].c:0}
+ const sr=series();D.xp=sr.length?sr[sr.length-1].c:0;
+ const dm={};Object.values(D.ev).forEach(e=>{const r=dm[e.d]||(dm[e.d]={g:0,l:0});r.g+=e.g;r.l+=e.l});
+ let L=1,p=0,ex=0;Object.keys(dm).sort().forEach(d=>{p+=dm[d].g;while(p>=need(L)+ex){p-=need(L)+ex;L++;ex=0}ex+=dm[d].l});
+ D.lv=L;D.lp=p;D.ex=ex;D.lreq=need(L)+ex}
 function mergeIn(o){o=o.data||o;let n=0;
  (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
  for(const k in o.done||{})if(!S.done[k]){S.done[k]=o.done[k];n++}
