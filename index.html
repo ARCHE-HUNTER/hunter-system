@@ -1,538 +1,574 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The System – Hunter Quest Log</title>
-<style>
-:root{color-scheme:dark;--bg:#05070f;--panel:#0c1224;--line:#1f3a6e;--glow:#3b9cff;--txt:#dbe8ff;--mut:#7f93b8;--gold:#ffd24a;--bad:#ff4d6d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:radial-gradient(circle at 50% -10%,#10234d,var(--bg) 60%) fixed;color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
-.wrap{max-width:1000px;margin:auto;padding:14px}
-.panel{background:linear-gradient(160deg,#0e1730,#080d1b);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 0 18px #3b9cff22,inset 0 0 20px #3b9cff0d;margin-bottom:14px}
-h2{margin:0 0 10px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow);text-shadow:0 0 8px var(--glow)}
-.hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.rank{width:74px;height:74px;border:2px solid var(--glow);border-radius:14px;display:grid;place-items:center;font-size:38px;font-weight:900;color:var(--glow);text-shadow:0 0 14px var(--glow);box-shadow:0 0 18px #3b9cff66;transform:rotate(45deg)}
-.rank span{transform:rotate(-45deg)}
-.hero .info{flex:1;min-width:200px}
-.name{font-size:20px;font-weight:700;letter-spacing:.05em;cursor:pointer}
-.bar{height:14px;background:#0a1020;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#1a6bff,#6fd0ff);box-shadow:0 0 12px var(--glow);transition:width .6s}
-.mut{color:var(--mut);font-size:12px}.gold{color:var(--gold);font-weight:700}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
-.stat{text-align:center;background:#0a1020;border:1px solid var(--line);border-radius:8px;padding:6px 2px;font-size:11px;color:var(--mut)}
-.stat b{display:block;font-size:18px;color:var(--txt)}
-.week{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px}
-.day{height:130px;border-radius:10px;border:2px solid transparent;position:relative;cursor:pointer;overflow:hidden;padding:8px;display:flex;flex-direction:column;justify-content:flex-end;transition:.25s;color:#fff}
-.day:hover{transform:translateY(-4px)}
-.day.sel{border-color:#fff;box-shadow:0 0 20px var(--glow)}
-.day .em{position:absolute;top:6px;right:8px;font-size:34px;filter:drop-shadow(0 0 8px #000)}
-.day .dn{font-weight:800;letter-spacing:.1em;font-size:13px;text-shadow:0 1px 6px #000}
-.day .th{font-size:10px;opacity:.85;text-shadow:0 1px 4px #000}
-.day .pr{font-size:11px;margin-top:3px;background:#000a;border-radius:6px;padding:1px 6px;width:fit-content}
-.day.today::after{content:"TODAY";position:absolute;top:6px;left:6px;font-size:9px;background:var(--glow);color:#000;padding:1px 5px;border-radius:4px;font-weight:800}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-button{background:#0a1a3a;color:var(--txt);border:1px solid var(--glow);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
-button:hover{background:#12306a;box-shadow:0 0 10px var(--glow)}
-button.sm{padding:3px 8px;font-size:12px}
-.cols{display:grid;grid-template-columns:340px 1fr;gap:14px}
-@media(max-width:760px){.cols{grid-template-columns:1fr}.stats{gap:4px}}
-svg text{fill:var(--mut);font-size:11px}
-form{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
-form .full{grid-column:1/-1}
-input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px;width:100%;font:inherit;font-size:13px}
-.task{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;margin-bottom:6px;background:#0a1020}
-.task.done{opacity:.5;text-decoration:line-through}
-.task .t{flex:1}.task .t small{display:block;color:var(--mut);text-decoration:none}
-.chk{width:24px;height:24px;border-radius:6px;border:2px solid var(--glow);background:none;padding:0;display:grid;place-items:center}
-.task.done .chk{background:var(--glow);color:#000}
-.xp{color:#6fd0ff;font-weight:700;font-size:12px}
-.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button.on{background:var(--glow);color:#000}
-.shop{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
-.wq{margin-bottom:8px;font-size:13px}
-#toast{position:fixed;inset:0;display:none;place-items:center;background:#000c;z-index:50;text-align:center}
-#toast.show{display:grid}
-#toast div{font-size:44px;font-weight:900;color:var(--glow);text-shadow:0 0 30px var(--glow);letter-spacing:.15em;animation:pop .6s}
-#toast p{font-size:15px;color:var(--txt);letter-spacing:.05em}
-@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-#hm{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;overflow-x:auto;padding:2px}#hm i{border-radius:3px;border:1px solid #1f3a6e55}
-.cb{height:10px;border-radius:5px;margin:2px 0 8px}.wide{display:flex;gap:8px;flex-wrap:wrap}
-</style></head><body><div class="wrap">
-<div id="auth" style="display:none;position:fixed;inset:0;z-index:99;background:#05070fee;place-items:center;padding:20px"><div class="panel" style="max-width:340px;width:100%;margin:0"><h2>⚔ The System</h2><p class="mut">Log in or sign up to sync your quests on all your devices.</p>
-<input id="em" type="email" placeholder="Email" autocomplete="email"><br><br><input id="pw" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password"><br><br>
-<div class="wide"><button onclick="auth('in')">Log in</button><button onclick="auth('up')">Sign up</button></div><p class="mut" id="am"></p></div></div>
-<div class="panel hero">
- <div class="rank"><span id="rk">E</span></div>
- <div class="info">
-  <div class="name" id="nm" title="Click to rename"></div>
-  <div class="mut" id="ttl"></div>
-  <div class="bar"><i id="xb"></i></div>
-  <div class="mut"><span id="xt"></span> · 🔥 Streak <b id="st">0</b> days · <span class="gold">🪙 <span id="gd">0</span></span></div>
- </div>
- <div class="stats" id="stats" style="width:100%"></div>
-</div>
+  <!DOCTYPE html>
+  <html lang="en"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The System – Hunter Quest Log</title>
+  <style>
+  :root{color-scheme:dark;--bg:#05070f;--panel:#0c1224;--line:#1f3a6e;--glow:#3b9cff;--txt:#dbe8ff;--mut:#7f93b8;--gold:#ffd24a;--bad:#ff4d6d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{margin:0;background:radial-gradient(circle at 50% -10%,#10234d,var(--bg) 60%) fixed;color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+  .wrap{max-width:1000px;margin:auto;padding:14px}
+  .panel{background:linear-gradient(160deg,#0e1730,#080d1b);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 0 18px #3b9cff22,inset 0 0 20px #3b9cff0d;margin-bottom:14px}
+  h2{margin:0 0 10px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow);text-shadow:0 0 8px var(--glow)}
+  .hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .rank{width:74px;height:74px;border:2px solid var(--glow);border-radius:14px;display:grid;place-items:center;font-size:38px;font-weight:900;color:var(--glow);text-shadow:0 0 14px var(--glow);box-shadow:0 0 18px #3b9cff66;transform:rotate(45deg)}
+  .rank span{transform:rotate(-45deg)}
+  .hero .info{flex:1;min-width:200px}
+  .name{font-size:20px;font-weight:700;letter-spacing:.05em;cursor:pointer}
+  .bar{height:14px;background:#0a1020;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#1a6bff,#6fd0ff);box-shadow:0 0 12px var(--glow);transition:width .6s}
+  .mut{color:var(--mut);font-size:12px}.gold{color:var(--gold);font-weight:700}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+  .stat{text-align:center;background:#0a1020;border:1px solid var(--line);border-radius:8px;padding:6px 2px;font-size:11px;color:var(--mut)}
+  .stat b{display:block;font-size:18px;color:var(--txt)}
+  .week{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px}
+  .day{height:130px;border-radius:10px;border:2px solid transparent;position:relative;cursor:pointer;overflow:hidden;padding:8px;display:flex;flex-direction:column;justify-content:flex-end;transition:.25s;color:#fff}
+  .day:hover{transform:translateY(-4px)}
+  .day.sel{border-color:#fff;box-shadow:0 0 20px var(--glow)}
+  .day .em{position:absolute;top:6px;right:8px;font-size:34px;filter:drop-shadow(0 0 8px #000)}
+  .day .dn{font-weight:800;letter-spacing:.1em;font-size:13px;text-shadow:0 1px 6px #000}
+  .day .th{font-size:10px;opacity:.85;text-shadow:0 1px 4px #000}
+  .day .pr{font-size:11px;margin-top:3px;background:#000a;border-radius:6px;padding:1px 6px;width:fit-content}
+  .day.today::after{content:"TODAY";position:absolute;top:6px;left:6px;font-size:9px;background:var(--glow);color:#000;padding:1px 5px;border-radius:4px;font-weight:800}
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  button{background:#0a1a3a;color:var(--txt);border:1px solid var(--glow);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+  button:hover{background:#12306a;box-shadow:0 0 10px var(--glow)}
+  button.sm{padding:3px 8px;font-size:12px}
+  .cols{display:grid;grid-template-columns:340px 1fr;gap:14px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}.stats{gap:4px}}
+  svg text{fill:var(--mut);font-size:11px}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  form .full{grid-column:1/-1}
+  input,select{background:#0a1020;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px;width:100%;font:inherit;font-size:13px}
+  .task{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;margin-bottom:6px;background:#0a1020}
+  .task.done{opacity:.5;text-decoration:line-through}
+  .task .t{flex:1}.task .t small{display:block;color:var(--mut);text-decoration:none}
+  .chk{width:24px;height:24px;border-radius:6px;border:2px solid var(--glow);background:none;padding:0;display:grid;place-items:center}
+  .task.done .chk{background:var(--glow);color:#000}
+  .xp{color:#6fd0ff;font-weight:700;font-size:12px}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button.on{background:var(--glow);color:#000}
+  .shop{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
+  .wq{margin-bottom:8px;font-size:13px}
+  #toast{position:fixed;inset:0;display:none;place-items:center;background:#000c;z-index:50;text-align:center}
+  #toast.show{display:grid}
+  #toast div{font-size:44px;font-weight:900;color:var(--glow);text-shadow:0 0 30px var(--glow);letter-spacing:.15em;animation:pop .6s}
+  #toast p{font-size:15px;color:var(--txt);letter-spacing:.05em}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  #hm{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;overflow-x:auto;padding:2px}#hm i{border-radius:3px;border:1px solid #1f3a6e55}
+  .cb{height:10px;border-radius:5px;margin:2px 0 8px}.wide{display:flex;gap:8px;flex-wrap:wrap}
+  </style></head><body><div class="wrap">
+  <div id="auth" style="display:none;position:fixed;inset:0;z-index:99;background:#05070fee;place-items:center;padding:20px"><div class="panel" style="max-width:340px;width:100%;margin:0"><h2>⚔ The System</h2><p class="mut">Log in or sign up to sync your quests on all your devices.</p>
+  <input id="nn" maxlength="20" placeholder="Hunter name (for new accounts)" autocomplete="nickname"><br><br><input id="em" type="email" placeholder="Email" autocomplete="email"><br><br><input id="pw" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password"><br><br>
+  <div class="wide"><button onclick="auth('in')">Log in</button><button onclick="auth('up')">Sign up</button></div><p class="mut" id="am"></p></div></div>
+  <div class="panel hero">
+  <div class="rank"><span id="rk">E</span></div>
+  <div class="info">
+    <div class="name" id="nm" title="Click to edit your profile"></div>
+    <div class="mut" id="ttl"></div>
+    <div class="bar"><i id="xb"></i></div>
+    <div class="mut"><span id="xt"></span> · 🔥 Streak <b id="st">0</b> days · <span class="gold">🪙 <span id="gd">0</span></span></div>
+  </div>
+  <div class="stats" id="stats" style="width:100%"></div>
+  </div>
 
-<div class="panel"><div class="nav"><button class="sm" onclick="wk(-1)">◀ Prev</button><h2 id="wl" style="margin:0"></h2><button class="sm" onclick="wk(1)">Next ▶</button></div>
-<div class="week" id="week"></div></div>
+  <div class="panel"><div class="nav"><button class="sm" onclick="wk(-1)">◀ Prev</button><h2 id="wl" style="margin:0"></h2><button class="sm" onclick="wk(1)">Next ▶</button></div>
+  <div class="week" id="week"></div></div>
 
-<div class="cols">
- <div class="panel"><div class="nav"><h2 id="ch" style="margin:0">Chrono Gate</h2><button class="sm" onclick="flip()">⇅ Flip clock</button></div>
-  <svg id="clk" viewBox="0 0 320 320" width="100%"></svg>
-  <form id="f">
-   <input class="full" id="tt" placeholder="New quest name..." required>
-   <div><div class="mut">From</div><input type="time" id="ts" value="09:00" required></div>
-   <div><div class="mut">To</div><input type="time" id="te" value="10:00" required></div>
-   <select id="tc"><option value="STR">💪 Fitness (STR)</option><option value="INT">📚 Study (INT)</option><option value="VIT">🍎 Health (VIT)</option><option value="AGI">💼 Work (AGI)</option><option value="SEN">🧘 Mind (SEN)</option><option value="__new">＋ New category…</option></select>
-   <select id="tr"><option value="once">This day only</option><option value="daily">Every day (habit)</option><option value="weekly">Every week (this weekday)</option><option value="__new">＋ Custom days…</option></select>
-   <select id="tx" class="full"><option value="10">Easy – 10 XP</option><option value="25" selected>Normal – 25 XP</option><option value="50">Hard – 50 XP</option><option value="100">Boss – 100 XP</option><option value="__new">＋ Custom XP…</option></select>
-   <button class="full">＋ Add Quest</button>
-  </form>
- </div>
- <div>
-  <div class="panel"><h2 id="qh">Daily Quests</h2><div id="tl"></div></div>
-  <div class="panel"><h2>Weekly Progress</h2><div id="wp"></div></div>
-  <div class="panel"><h2>Reward Shop</h2><div id="sh"></div>
-   <form id="sf" style="grid-template-columns:1fr 80px auto"><input id="sn" placeholder="Custom reward" required><input id="sp" type="number" min="1" placeholder="🪙" required><button>Add</button></form></div>
- </div>
-</div>
-<div class="panel"><div class="nav"><h2 style="margin:0">📈 XP Chart</h2><div class="tabs" id="mr" style="margin:0"></div></div>
-<p class="mut">The line goes up when you gain XP and down when missed quests cost you XP at day end. Your level is never lowered: lost XP is added on top of what you need for your next level.</p><div id="mk"></div>
-<h2 style="margin-top:14px">Hunter Radar</h2><div id="rd"></div>
-<h2 style="margin-top:14px">Category Charts</h2><div id="cc" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div></div>
-<div class="panel"><h2>Performance</h2><div class="tabs" id="pt"></div>
-<div class="nav"><button class="sm" onclick="po--;perf()">◀</button><b id="pl"></b><button class="sm" onclick="po++;perf()">▶</button></div>
-<div class="stats" id="pk" style="grid-template-columns:repeat(4,1fr)"></div>
-<svg id="pc" viewBox="0 0 600 190" width="100%" style="margin-top:8px"></svg>
-<div id="pcat"></div><h2 style="margin-top:12px">Activity Heatmap (17 weeks)</h2><div id="hm"></div></div>
-<div class="panel"><h2>Data &amp; Sync</h2><div class="wide"><button onclick="pick()">📁 Choose auto-save folder</button><button onclick="recon()">🔄 Reconnect folder</button><button onclick="exp()">⬆ Export JSON</button><button onclick="$('imp').click()">⬇ Import &amp; merge</button><button id="adminOpen" onclick="openAdmin()" style="display:none">🛡 Admin Panel</button></div>
-<input type="file" id="imp" accept=".json,application/json" multiple hidden>
-<p class="mut" id="fs"></p><p class="mut" id="cs"></p><button id="lo" onclick="out()" style="display:none">Log out</button>
-<p class="mut">Import only ADDS missing quests, completions and rewards — it never replaces or deletes what you already have. PC tip: pick a folder inside iCloud Drive / OneDrive / Dropbox, then import that same file on your iPhone (Files app). iPhone Safari cannot write to folders silently, so use Export → Save to Files there.</p></div>
+  <div class="cols">
+  <div class="panel"><div class="nav"><h2 id="ch" style="margin:0">Chrono Gate</h2><button class="sm" onclick="flip()">⇅ Flip clock</button></div>
+    <svg id="clk" viewBox="0 0 320 320" width="100%"></svg>
+    <form id="f">
+    <input class="full" id="tt" placeholder="New quest name..." required>
+    <div><div class="mut">From</div><input type="time" id="ts" value="09:00" required></div>
+    <div><div class="mut">To</div><input type="time" id="te" value="10:00" required></div>
+    <select id="tc"><option value="STR">💪 Fitness (STR)</option><option value="INT">📚 Study (INT)</option><option value="VIT">🍎 Health (VIT)</option><option value="AGI">💼 Work (AGI)</option><option value="SEN">🧘 Mind (SEN)</option><option value="__new">＋ New category…</option></select>
+    <select id="tr"><option value="once">This day only</option><option value="daily">Every day (habit)</option><option value="weekly">Every week (this weekday)</option><option value="__new">＋ Custom days…</option></select>
+    <select id="tx" class="full"><option value="10">Easy – 10 XP</option><option value="25" selected>Normal – 25 XP</option><option value="50">Hard – 50 XP</option><option value="100">Boss – 100 XP</option><option value="__new">＋ Custom XP…</option></select>
+    <button class="full">＋ Add Quest</button>
+    </form>
+  </div>
+  <div>
+    <div class="panel"><h2 id="qh">Daily Quests</h2><div id="tl"></div></div>
+    <div class="panel"><h2>Weekly Progress</h2><div id="wp"></div></div>
+    <div class="panel"><h2>Reward Shop</h2><div id="sh"></div>
+    <form id="sf" style="grid-template-columns:1fr 80px auto"><input id="sn" placeholder="Custom reward" required><input id="sp" type="number" min="1" placeholder="🪙" required><button>Add</button></form></div>
+  </div>
+  </div>
+  <div class="panel"><h2>👤 Hunter Profile</h2><div id="pf"></div></div>
+  <div class="panel"><div class="nav"><h2 style="margin:0">📈 XP Chart</h2><div class="tabs" id="mr" style="margin:0"></div></div>
+  <p class="mut">The line goes up when you gain XP and down when missed quests cost you XP at day end. Your level is never lowered: lost XP is added on top of what you need for your next level.</p><div id="mk"></div>
+  <h2 style="margin-top:14px">Hunter Radar</h2><div id="rd"></div>
+  <h2 style="margin-top:14px">Category Charts</h2><div id="cc" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div></div>
+  <div class="panel"><h2>Performance</h2><div class="tabs" id="pt"></div>
+  <div class="nav"><button class="sm" onclick="po--;perf()">◀</button><b id="pl"></b><button class="sm" onclick="po++;perf()">▶</button></div>
+  <div class="stats" id="pk" style="grid-template-columns:repeat(4,1fr)"></div>
+  <svg id="pc" viewBox="0 0 600 190" width="100%" style="margin-top:8px"></svg>
+  <div id="pcat"></div><h2 style="margin-top:12px">Activity Heatmap (17 weeks)</h2><div id="hm"></div></div>
+  <div class="panel"><h2>Data &amp; Sync</h2><div class="wide"><button onclick="pick()">📁 Choose auto-save folder</button><button onclick="recon()">🔄 Reconnect folder</button><button onclick="exp()">⬆ Export JSON</button><button onclick="$('imp').click()">⬇ Import &amp; merge</button><button id="adminOpen" onclick="openAdmin()" style="display:none">🛡 Admin Panel</button></div>
+  <input type="file" id="imp" accept=".json,application/json" multiple hidden>
+  <p class="mut" id="fs"></p><p class="mut" id="cs"></p><button id="lo" onclick="out()" style="display:none">Log out</button>
+  <p class="mut">Import only ADDS missing quests, completions and rewards — it never replaces or deletes what you already have. PC tip: pick a folder inside iCloud Drive / OneDrive / Dropbox, then import that same file on your iPhone (Files app). iPhone Safari cannot write to folders silently, so use Export → Save to Files there.</p></div>
 
-<div class="panel" id="adminPanel" style="display:none">
- <div class="nav"><h2 style="margin:0">🛡 Admin Panel</h2><button class="sm" onclick="closeAdmin()">Close</button></div>
- <p class="mut">Restricted administration. Changes are saved to the selected user's cloud record and recorded in the audit log.</p>
- <div class="wide" style="align-items:end">
-  <div style="flex:1;min-width:220px"><div class="mut">Registered users</div><select id="adminUsers" onchange="adminLoadSelected()"><option value="">Choose a user…</option></select></div>
-  <button onclick="adminLoadUsers()">↻ Refresh users</button>
- </div>
- <p id="adminSummary" class="mut"></p>
- <div id="admTools"></div><details style="margin-top:12px"><summary class="mut" style="cursor:pointer">Advanced: raw data editor (not needed for normal use)</summary><div class="mut">User data editor (JSON).</div>
- <textarea id="adminJson" spellcheck="false" style="width:100%;min-height:320px;margin:8px 0;background:#070c18;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font:12px/1.5 Consolas,monospace"></textarea>
- <div class="wide"><button onclick="adminSaveUser()">Save changes to selected user</button><button onclick="adminLoadSelected()">Discard / reload</button></div></details>
- <h2 style="margin-top:16px">Recent admin activity</h2><div id="adminAudit" class="mut">Loading audit history…</div>
- <p class="mut">Never paste passwords, API keys, or service-role secrets into this editor. Only edit the selected user's Hunter System data.</p>
-</div>
+  <div class="panel" id="adminPanel" style="display:none">
+  <div class="nav"><h2 style="margin:0">🛡 Admin Panel</h2><button class="sm" onclick="closeAdmin()">Close</button></div>
+  <p class="mut">Restricted administration. Changes are saved to the selected user's cloud record and recorded in the audit log.</p>
+  <div class="wide" style="align-items:end">
+    <div style="flex:1;min-width:220px"><div class="mut">Registered users</div><select id="adminUsers" onchange="adminLoadSelected()"><option value="">Choose a user…</option></select></div>
+    <button onclick="adminLoadUsers()">↻ Refresh users</button>
+  </div>
+  <p id="adminSummary" class="mut"></p>
+  <div id="admTools"></div><details style="margin-top:12px"><summary class="mut" style="cursor:pointer">Advanced: raw data editor (not needed for normal use)</summary><div class="mut">User data editor (JSON).</div>
+  <textarea id="adminJson" spellcheck="false" style="width:100%;min-height:320px;margin:8px 0;background:#070c18;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font:12px/1.5 Consolas,monospace"></textarea>
+  <div class="wide"><button onclick="adminSaveUser()">Save changes to selected user</button><button onclick="adminLoadSelected()">Discard / reload</button></div></details>
+  <h2 style="margin-top:16px">Recent admin activity</h2><div id="adminAudit" class="mut">Loading audit history…</div>
+  <p class="mut">Never paste passwords, API keys, or service-role secrets into this editor. Only edit the selected user's Hunter System data.</p>
+  </div>
 
-<div class="mut" style="text-align:center;padding:10px">Arise. Complete quests, earn XP, rise from E‑Rank to S‑Rank.</div>
-</div>
-<div id="toast" onclick="this.classList.remove('show')"><div id="tm">LEVEL UP!</div><p id="tp"></p></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>
-// ===== PASTE YOUR SUPABASE VALUES BETWEEN THE QUOTES =====
-const SUPABASE_URL="https://mwsjsweumnonslrsrywk.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13c2pzd2V1bW5vbnNscnNyeXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNTkyMTgsImV4cCI6MjEwODkzNTIxOH0.sFHTtwbj3nK6b79COqGuUf60UgnX7gkmJfngIRz3uFg";
-// =========================================================
-const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
-const TH=[['🌙','Moonlit Gate','#1b1f5e,#6a3fb5'],['🔥','Flame Dungeon','#5e1010,#ff7a1a'],['🌲','Shadow Forest','#07281c,#1f8f5a'],['⚡','Storm Peak','#101a3a,#2f7bff'],['💎','Crystal Cavern','#0b3a4a,#4fe3e0'],['🏰','Crimson Castle','#3a0a1c,#c2255c'],['☁️','Sky Citadel','#1b3a6b,#9ad0ff']];
-const COL={STR:'#ff5d5d',INT:'#5da8ff',VIT:'#5dff9a',AGI:'#ffd24a',SEN:'#c27bff'};
-const $=id=>document.getElementById(id);
-let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:'Watch an episode 🍿',p:40},{n:'Sweet treat 🍰',p:60},{n:'Gaming hour 🎮',p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]};
-try{const r=localStorage.getItem('hunter-sys');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-const save=()=>{try{localStorage.setItem('hunter-sys',JSON.stringify(S))}catch(e){};fileSave();cloudSave()};
-const need=l=>Math.round(100*Math.pow(l,1.4));
-function lvl(){return[D.lv,D.lp,D.lreq]}
-const RK=l=>l<5?'E':l<10?'D':l<20?'C':l<30?'B':l<45?'A':'S';
-const TT=l=>['Newbie Hunter','Awakened','Dungeon Crawler','Shadow Initiate','Elite Hunter','Shadow Monarch'][['E','D','C','B','A','S'].indexOf(RK(l))];
-const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-const wd=d=>(d.getDay()+6)%7;
-let off=0;
-function monday(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-wd(d)+off*7);return d}
-let sel=key(new Date());
-const dateOf=k=>{const[y,m,d]=k.split('-');return new Date(y,m-1,d)};
-function onDay(t,k){const d=dateOf(k);return t.r==='daily'||(t.r==='once'&&t.date===k)||(t.r==='weekly'&&t.wd===wd(d))||(t.r==='days'&&t.days.includes(wd(d)))}
-const tasksOn=k=>S.tasks.filter(t=>onDay(t,k)).sort((a,b)=>a.s-b.s);
-const isDone=(t,k)=>!!S.done[t.id+'|'+k];
-const tm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-const mins=v=>{const[h,m]=v.split(':');return +h*60+ +m};
-function wk(n){off+=n;const m=monday();sel=key(m);render()}
-function toggle(id,k){
- const t=S.tasks.find(x=>x.id===id),dk=id+'|'+k;derive();const before=lvl(D.xp)[0];
- if(S.done[dk])delete S.done[dk];else S.done[dk]={x:t.x,c:t.c,d:k,n:t.n,t:Date.now()};
- derive();const after=lvl(D.xp)[0];save();render();
- if(after>before)pop('LEVEL UP!','You are now Level '+after+' · Rank '+RK(after)+' · '+TT(after));
-}
-function pop(a,b){$('tm').textContent=a;$('tp').textContent=b;$('toast').classList.add('show')}
-function del(id){if(!confirm("Delete this quest?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);save();render()}
-function buy(i){const q=S.shop[i];derive();if(D.gold<q.p){pop("NOT ENOUGH GOLD","Complete more quests!");return}S.spent[Date.now()]={n:q.n,p:q.p};save();render();pop("REWARD CLAIMED",q.n)}
-function delShop(i){S.shop.splice(i,1);save();render()}
-function arc(cx,cy,r1,r2,a1,a2){
- const p=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
- const L=a2-a1>Math.PI?1:0,[x1,y1]=p(r2,a1),[x2,y2]=p(r2,a2),[x3,y3]=p(r1,a2),[x4,y4]=p(r1,a1);
- return `M${x1} ${y1}A${r2} ${r2} 0 ${L} 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 ${L} 0 ${x4} ${y4}Z`}
-function clock(){const O=localStorage.getItem("hs-fwd")?0:Math.PI;
- let h='<circle cx="160" cy="160" r="140" fill="#080d1b" stroke="#1f3a6e" stroke-width="2"/><circle cx="160" cy="160" r="92" fill="none" stroke="#12244a"/>';
- for(let i=0;i<24;i++){const a=i/24*2*Math.PI+O,x1=160+132*Math.sin(a),y1=160-132*Math.cos(a),x2=160+(i%3?126:120)*Math.sin(a),y2=160-(i%3?126:120)*Math.cos(a);
-  h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3b9cff" stroke-opacity=".6"/>`;
-  h+=`<text x="${160+150*Math.sin(a)}" y="${160-150*Math.cos(a)+4}" text-anchor="middle" style="font-size:10px">${i}</text>`}
- const ts=tasksOn(sel);
- ts.forEach((t,i)=>{let a=t.s,b=t.e;if(b<=a)b+=1440;if(b-a>=1440)b=a+1439;const lane=i%2,r1=96+lane*20,r2=r1+18,d=isDone(t,sel);
-  h+=`<path d="${arc(160,160,r1,r2,a/1440*2*Math.PI+O,b/1440*2*Math.PI+O)}" fill="${COL[t.c]}" fill-opacity="${d?.25:.75}" stroke="#fff" stroke-opacity=".5"><title>${esc(t.n)} ${tm(t.s)}–${tm(t.e)}</title></path>`;
-  const m=((a+b)/2)/1440*2*Math.PI+O,rr=r1+9;
-  if(b-a>=75)h+=`<text x="${160+rr*Math.sin(m)}" y="${160-rr*Math.cos(m)+3}" text-anchor="middle" style="fill:#000;font-size:9px;font-weight:700">${esc(t.n.slice(0,9))}</text>`});
- if(sel===key(new Date())){const n=new Date(),m=(n.getHours()*60+n.getMinutes())/1440*2*Math.PI+O;
-  h+=`<line x1="160" y1="160" x2="${160+126*Math.sin(m)}" y2="${160-126*Math.cos(m)}" stroke="#fff" stroke-width="2"/><circle cx="160" cy="160" r="4" fill="#fff"/>`}
- const d=dateOf(sel),i=wd(d);
- h+=`<text x="160" y="150" text-anchor="middle" style="fill:#fff;font-size:20px;font-weight:800">${DAYS[i]}</text><text x="160" y="170" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text><text x="160" y="186" text-anchor="middle">${ts.length} quests</text>`;
- $('clk').innerHTML=h}
-function streak(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!D.log[key(d)])d.setDate(d.getDate()-1);while(D.log[key(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
-function render(){S.cats.forEach(c=>COL[c.k]=c.c);derive();fillOpts();
- const[l,x,n]=lvl(D.xp);
- $('rk').textContent=RK(l);$('nm').textContent=S.name+' · LV '+l;$('ttl').textContent='['+TT(l)+']';
- $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level'+(D.ex?' (includes +'+D.ex+' from missed quests)':'')+(D.missY?' · ⚠ missed yesterday: '+D.missY+' quest(s), +'+D.penY+' XP added to your next level':'');
- $('st').textContent=streak();$('gd').textContent=Math.max(0,D.gold);
- $('stats').innerHTML=Object.keys(D.stats).map(k=>`<div class="stat" style="border-color:${COL[k]}55">${k}<b style="color:${COL[k]}">${D.stats[k]}</b></div>`).join('');
- const m=monday(),e=new Date(m);e.setDate(e.getDate()+6);
- $('wl').textContent=m.getDate()+'/'+(m.getMonth()+1)+' – '+e.getDate()+'/'+(e.getMonth()+1);
- let w='';const today=key(new Date());
- for(let i=0;i<7;i++){const d=new Date(m);d.setDate(m.getDate()+i);const k=key(d),ts=tasksOn(k),dn=ts.filter(t=>isDone(t,k)).length,T=TH[i];
-  w+=`<div class="day ${k===sel?'sel':''} ${k===today?'today':''}" onclick="sel='${k}';render()" style="background:radial-gradient(circle at 70% 25%,#ffffff40,transparent 40%),linear-gradient(160deg,${T[2]})"><span class="em">${T[0]}</span><span class="dn">${DAYS[i]} ${d.getDate()}</span><span class="th">${T[1]}</span><span class="pr">${dn}/${ts.length} ✔</span></div>`}
- $('week').innerHTML=w;
- clock();
- const d=dateOf(sel),ts=tasksOn(sel);
- $('qh').textContent=DAYS[wd(d)]+' Quests';$('ch').textContent='Chrono Gate · '+DAYS[wd(d)];
- $('tl').innerHTML=ts.length?ts.map(t=>`<div class="task ${isDone(t,sel)?'done':''}" style="--c:${COL[t.c]}"><button class="chk" onclick="toggle(${t.id},'${sel}')">${isDone(t,sel)?'✔':''}</button><div class="t">${esc(t.n)}<small>${tm(t.s)} – ${tm(t.e)} · ${t.c} · ${t.r==='once'?'one-time':t.r==='days'?t.days.map(i=>DAYS[i]).join('·'):t.r}</small></div><span class="xp">+${t.x} XP</span><button class="sm" onclick="edit(${t.id})">✎</button><button class="sm" onclick="del(${t.id})">✕</button></div>`).join(''):'<div class="mut">No quests for this day. Add one — the System awaits.</div>';
- let wp='';
- [['Daily habits','daily'],['Weekly quests','weekly'],['Custom days','days'],['One-time','once']].forEach(([lb,r])=>{
-  S.tasks.filter(t=>t.r===r).forEach(t=>{let tot=0,dn=0;for(let i=0;i<7;i++){const dd=new Date(m);dd.setDate(m.getDate()+i);const k=key(dd);if(onDay(t,k)){tot++;if(isDone(t,k))dn++}}
-   if(tot)wp+=`<div class="wq"><div style="display:flex;justify-content:space-between;align-items:center"><span>${esc(t.n)} <span class="mut">(${lb}) ${dn}/${tot}</span></span><span><button class="sm" onclick="edit(${t.id})">✎</button> <button class="sm" onclick="del(${t.id})">✕</button></span></div><div class="bar" style="height:8px"><i style="width:${dn/tot*100}%;background:${COL[t.c]}"></i></div></div>`})});
- $('wp').innerHTML=wp||'<div class="mut">Add habits to see weekly progress.</div>';
- $('sh').innerHTML=S.shop.map((s,i)=>`<div class="shop"><span>${esc(s.n)}</span><span><span class="gold">🪙 ${s.p}</span> <button class="sm" onclick="buy(${i})">Claim</button> <button class="sm" onclick="delShop(${i})">✕</button></span></div>`).join('');perf();market();
-}
-const PAL=['#ff8ad8','#4fe3e0','#ff9f43','#c3f73a','#e2e8f0','#b08968'];
-function fillOpts(){const fill=(id,items)=>{const s=$(id),v=s.value,nw=s.querySelector('[value=__new]');s.querySelectorAll('.cu').forEach(o=>o.remove());
-  items.forEach(([val,lab])=>{const o=document.createElement('option');o.className='cu';o.value=val;o.textContent=lab;s.insertBefore(o,nw)});
-  if([...s.options].some(o=>o.value===v))s.value=v};
- fill('tc',S.cats.map(c=>[c.k,c.k]));fill('tx',S.xpo.map(x=>[''+x,'Custom – '+x+' XP']));fill('tr',S.rep.map(d=>['days:'+d,'Every '+d.map(i=>DAYS[i]).join(' · ')]))}
-$('tc').onchange=function(){if(this.value!=='__new')return;
- const n=(prompt('New category name (max 12 characters, emoji welcome):')||'').replace(/[<>&"'`]/g,'').trim().slice(0,12);
- if(!n){this.selectedIndex=0;return}
- if(!COL.hasOwnProperty(n)){S.cats.push({k:n,c:PAL[S.cats.length%PAL.length]});save()}
- render();$('tc').value=n};
-$('tx').onchange=function(){if(this.value!=='__new')return;
- const x=Math.round(+prompt('How much XP for this quest? (1–1000)'));
- if(!(x>=1&&x<=1000)){this.value='25';return}
- if(!['10','25','50','100'].includes(''+x)&&!S.xpo.includes(x)){S.xpo.push(x);S.xpo.sort((a,b)=>a-b);save()}
- render();$('tx').value=''+x};
-$('tr').onchange=function(){if(this.value!=='__new')return;
- const t=(prompt('Which days? Type day names, e.g. MON WED FRI — or WEEKDAYS / WEEKENDS')||'').toUpperCase();
- const d=/WEEKDAY/.test(t)?[0,1,2,3,4]:/WEEKEND/.test(t)?[5,6]:DAYS.map((n,i)=>t.includes(n)?i:-1).filter(i=>i>=0);
- if(!d.length){this.value='once';return}
- if(d.length===7){this.value='daily';return}
- if(!S.rep.some(r=>''+r===''+d)){S.rep.push(d);save()}
- render();$('tr').value='days:'+d};
-$('f').onsubmit=e=>{e.preventDefault();
- S.tasks.push({id:Date.now(),n:$('tt').value.trim(),s:mins($('ts').value),e:mins($('te').value),c:$('tc').value,r:$('tr').value.startsWith('days:')?'days':$('tr').value,days:$('tr').value.startsWith('days:')?$('tr').value.slice(5).split(',').map(Number):undefined,x:+$('tx').value,date:sel,wd:wd(dateOf(sel))});
- $('tt').value='';save();render()};
-$('sf').onsubmit=e=>{e.preventDefault();S.shop.push({n:$('sn').value,p:+$('sp').value});$('sn').value='';$('sp').value='';save();render()};
-$('nm').onclick=()=>{const n=prompt('Hunter name?',S.name);if(n){S.name=n.slice(0,20);save();render()}};
-setInterval(()=>{if(sel===key(new Date()))clock()},60000);
-let D={};
-function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{},ev:{},missY:0,penY:0};S.cats.forEach(c=>D.stats[c.k]=0);
- const tk=key(new Date()),yk=key(new Date(Date.now()-864e5)),B=S.base,lg={},ll={},add=(m,d,v)=>{m[d]=(m[d]||0)+v};
- if(!S.penFrom){S.penFrom=tk;try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}}
- const ev=(d,c)=>D.ev[d+"|"+c]||(D.ev[d+"|"+c]={d,c,g:0,l:0});
- for(const k in S.done){const c=S.done[k];D.gold+=Math.round(c.x/2);D.stats[c.c]=(D.stats[c.c]||0)+1;D.log[c.d]=(D.log[c.d]||0)+1;ev(c.d,c.c).g+=c.x;if(!B||c.d>B.d||(c.d===B.d&&c.t>B.t))add(lg,c.d,c.x)}
- (S.adj||[]).forEach(a=>{if(a.x>0){ev(a.d,"ADM").g+=a.x;if(!B||a.t>B.t)add(lg,a.d,a.x)}else{ev(a.d,"ADM").l-=a.x;if(!B||a.t>B.t)add(ll,a.d,-a.x)}});
- S.tasks.forEach(t=>{const st=new Date(Math.max(t.id,dateOf(S.penFrom).getTime()));st.setHours(0,0,0,0);
-  for(let d=new Date(st);key(d)<tk;d.setDate(d.getDate()+1)){const k=key(d);if(onDay(t,k)&&!isDone(t,k)){ev(k,t.c).l+=t.x;if(!B||k>B.d)add(ll,k,t.x);if(k===yk){D.missY++;D.penY+=t.x}}}});
- D.gold+=S.gadj||0;for(const k in S.spent)D.gold-=S.spent[k].p;
- const sr=series();D.xp=sr.length?sr[sr.length-1].c:0;
- let L=B?B.lv:1,p=B?B.lp:0,ex=0;[...new Set([...Object.keys(lg),...Object.keys(ll)])].sort().forEach(d=>{p+=lg[d]||0;while(p>=need(L)+ex){p-=need(L)+ex;L++;ex=0}ex+=ll[d]||0});
- D.lv=L;D.lp=p;D.ex=ex;D.lreq=need(L)+ex}
-function mergeIn(o){o=o.data||o;let n=0;
- (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
- for(const k in o.done||{})if(!S.done[k]){S.done[k]=o.done[k];n++}
- for(const k in o.spent||{})if(!S.spent[k]){S.spent[k]=o.spent[k];n++}
- (o.shop||[]).forEach(q=>{if(!S.shop.some(x=>x.n===q.n)){S.shop.push(q);n++}});
- (o.cats||[]).forEach(c=>{if(!S.cats.some(x=>x.k===c.k)){S.cats.push(c);n++}});
- (o.xpo||[]).forEach(v=>{if(!S.xpo.includes(v)){S.xpo.push(v);n++}});
- (o.rep||[]).forEach(v=>{if(!S.rep.some(x=>''+x===''+v)){S.rep.push(v);n++}});
- return n}
-async function exp(){const txt=JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1);
- const f=new File([txt],"hunter-backup-"+key(new Date())+".json",{type:"application/json"});
- try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==="AbortError")return}
- const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}
-$("imp").onchange=async e=>{let n=0,bad=0;
- for(const f of e.target.files){try{n+=mergeIn(JSON.parse(await f.text()))}catch(x){bad++}}
- e.target.value="";save();render();pop(n?"DATA MERGED":"NOTHING NEW",n+" new items added"+(bad?" · "+bad+" file(s) unreadable":""))};
-const FN="hunter-system-data.json";let dir=null,ft;
-const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("hs",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);q.onsuccess=()=>{const s=q.result.transaction("k",m==="get"?"readonly":"readwrite").objectStore("k"),rq=m==="get"?s.get("dir"):s.put(v,"dir");rq.onsuccess=()=>r(rq.result);rq.onerror=()=>r(null)}}catch(x){r(null)}});
-const fst=t=>{$("fs").textContent=t};
-async function readMerge(){try{const fh=await dir.getFileHandle(FN);mergeIn(JSON.parse(await(await fh.getFile()).text()))}catch(e){}}
-function fileSave(){if(!dir)return;clearTimeout(ft);ft=setTimeout(async()=>{try{const fh=await dir.getFileHandle(FN,{create:true}),w=await fh.createWritable();
- await w.write(JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1));await w.close();fst("✅ Auto-saved to folder \""+dir.name+"\" at "+new Date().toLocaleTimeString())}catch(e){fst("⚠ Folder save failed — click Reconnect folder")}},400)}
-async function pick(){if(!window.showDirectoryPicker){pop("NOT SUPPORTED","This browser cannot write to folders (iPhone Safari cannot). Use Export / Import.");return}
- try{dir=await showDirectoryPicker({mode:"readwrite",id:"hunter"});await idb("put",dir);await readMerge();save();render()}catch(e){}}
-async function recon(){if(!window._h){pop("NO FOLDER","Choose a folder first.");return}
- try{if(await window._h.requestPermission({mode:"readwrite"})==="granted"){dir=window._h;await readMerge();save();render()}}catch(e){}}
-async function initFolder(){if(!window.showDirectoryPicker){fst("📱 This browser cannot auto-save to a folder. Use Export → Save to Files, then Import to merge.");return}
- const h=await idb("get");if(!h){fst("No auto-save folder chosen yet.");return}
- try{if(await h.queryPermission({mode:"readwrite"})==="granted"){dir=h;await readMerge();save();render()}else{window._h=h;fst("Folder remembered — click Reconnect folder to resume auto-save.")}}catch(e){fst("Choose the folder again.")}}
-let pr="week",po=0;
-function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,idx,title;
- if(pr==="day"){start=new Date(now);start.setDate(start.getDate()+po);end=start;labels=[...Array(24).keys()].map(String);idx=c=>c.d===key(start)?new Date(c.t||0).getHours():-1;title=start.toDateString()}
- else if(pr==="week"){start=new Date(now);start.setDate(start.getDate()-wd(start)+po*7);end=new Date(start);end.setDate(end.getDate()+6);labels=DAYS.map(x=>x.slice(0,2));idx=c=>{const f=Math.round((dateOf(c.d)-start)/864e5);return f>=0&&f<7?f:-1};title=key(start)+" → "+key(end)}
- else if(pr==="month"){start=new Date(now.getFullYear(),now.getMonth()+po,1);end=new Date(start.getFullYear(),start.getMonth()+1,0);labels=[...Array(end.getDate())].map((_,i)=>String(i+1));idx=c=>{const d=dateOf(c.d);return d>=start&&d<=end?d.getDate()-1:-1};title=start.toLocaleString("en",{month:"long",year:"numeric"})}
- else{start=new Date(now.getFullYear()+po,0,1);end=new Date(start.getFullYear(),11,31);labels="JFMAMJJASOND".split("");idx=c=>dateOf(c.d).getFullYear()===start.getFullYear()?dateOf(c.d).getMonth():-1;title=String(start.getFullYear())}
- const n=labels.length,xs=Array(n).fill(0),cs=Array(n).fill(0),cat=Object.fromEntries(Object.keys(COL).map(k=>[k,0]));
- Object.values(S.done).forEach(c=>{const i=idx(c);if(i>=0){xs[i]+=c.x;cs[i]++;cat[c.c]=(cat[c.c]||0)+c.x}});
- let sched=0;for(let d=new Date(start);d<=end&&d<=now;d.setDate(d.getDate()+1))sched+=tasksOn(key(d)).length;
- const tx=xs.reduce((a,b)=>a+b,0),tq=cs.reduce((a,b)=>a+b,0),best=xs.indexOf(Math.max(...xs));
- $("pt").innerHTML=["day","week","month","year"].map(r=>`<button class="${r===pr?"on":""}" onclick="pr='${r}';po=0;perf()">${r.toUpperCase()}</button>`).join("");
- $("pl").textContent=title;
- $("pk").innerHTML=[["XP",tx],["Quests",tq],["Done %",sched?Math.min(100,Math.round(tq/sched*100))+"%":"–"],["Best",tx?labels[best]:"–"]].map(a=>`<div class="stat">${a[0]}<b>${a[1]}</b></div>`).join("");
- const W=600,H=190,B=24,mx=Math.max(10,...xs),bw=W/n;
- let g=`<defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#1a6bff"/></linearGradient></defs><text x="2" y="12">${mx} XP</text><line x1="0" x2="${W}" y1="${H-B}" y2="${H-B}" stroke="#1f3a6e"/>`;
- xs.forEach((v,i)=>{const h=v/mx*(H-B-20);g+=`<rect x="${i*bw+bw*.15}" y="${H-B-h}" width="${bw*.7}" height="${v?Math.max(h,2):0}" rx="2" fill="url(#gr)"><title>${labels[i]}: ${v} XP · ${cs[i]} quests</title></rect>`;
-  if(n<=12||i%3==0)g+=`<text x="${i*bw+bw/2}" y="${H-8}" text-anchor="middle">${labels[i]}</text>`});
- $("pc").innerHTML=g;
- $("pcat").innerHTML=Object.keys(cat).map(k=>`<div class="mut">${k} · ${cat[k]} XP</div><div class="cb" style="width:${Math.max(2,tx?cat[k]/tx*100:0)}%;background:${COL[k]}"></div>`).join("");
- let h="";const st=new Date(now);st.setDate(st.getDate()-wd(st)-16*7);
- for(let i=0;i<119;i++){const d=new Date(st);d.setDate(st.getDate()+i);if(d>now){h+="<i></i>";continue}const c=D.log[key(d)]||0;h+=`<i title="${key(d)}: ${c} quests" style="background:${c?`rgba(59,156,255,${Math.min(1,.2+c*.2)})`:"#0a1020"}"></i>`}
- $("hm").innerHTML=h}
+  <div class="mut" style="text-align:center;padding:10px">Arise. Complete quests, earn XP, rise from E‑Rank to S‑Rank.</div>
+  </div>
+  <div id="toast" onclick="this.classList.remove('show')"><div id="tm">LEVEL UP!</div><p id="tp"></p></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script>
+  // ===== PASTE YOUR SUPABASE VALUES BETWEEN THE QUOTES =====
+  const SUPABASE_URL="https://mwsjsweumnonslrsrywk.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13c2pzd2V1bW5vbnNscnNyeXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNTkyMTgsImV4cCI6MjEwODkzNTIxOH0.sFHTtwbj3nK6b79COqGuUf60UgnX7gkmJfngIRz3uFg";
+  // =========================================================
+  const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const TH=[['🌙','Moonlit Gate','#1b1f5e,#6a3fb5'],['🔥','Flame Dungeon','#5e1010,#ff7a1a'],['🌲','Shadow Forest','#07281c,#1f8f5a'],['⚡','Storm Peak','#101a3a,#2f7bff'],['💎','Crystal Cavern','#0b3a4a,#4fe3e0'],['🏰','Crimson Castle','#3a0a1c,#c2255c'],['☁️','Sky Citadel','#1b3a6b,#9ad0ff']];
+  const COL={STR:'#ff5d5d',INT:'#5da8ff',VIT:'#5dff9a',AGI:'#ffd24a',SEN:'#c27bff'};
+  const $=id=>document.getElementById(id);
+  let S={name:'Hunter',xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:'Watch an episode 🍿',p:40},{n:'Sweet treat 🍰',p:60},{n:'Gaming hour 🎮',p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]};
+  try{const r=localStorage.getItem('hunter-sys');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+  const save=()=>{try{localStorage.setItem('hunter-sys',JSON.stringify(S))}catch(e){};fileSave();cloudSave()};
+  const need=l=>Math.round(100*Math.pow(l,1.4));
+  function lvl(){return[D.lv,D.lp,D.lreq]}
+  const RK=l=>l<5?'E':l<10?'D':l<20?'C':l<30?'B':l<45?'A':'S';
+  const TT=l=>['Newbie Hunter','Awakened','Dungeon Crawler','Shadow Initiate','Elite Hunter','Shadow Monarch'][['E','D','C','B','A','S'].indexOf(RK(l))];
+  const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const wd=d=>(d.getDay()+6)%7;
+  let off=0;
+  function monday(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-wd(d)+off*7);return d}
+  let sel=key(new Date());
+  const dateOf=k=>{const[y,m,d]=k.split('-');return new Date(y,m-1,d)};
+  function onDay(t,k){const d=dateOf(k);return t.r==='daily'||(t.r==='once'&&t.date===k)||(t.r==='weekly'&&t.wd===wd(d))||(t.r==='days'&&t.days.includes(wd(d)))}
+  const tasksOn=k=>S.tasks.filter(t=>onDay(t,k)).sort((a,b)=>a.s-b.s);
+  const isDone=(t,k)=>!!S.done[t.id+'|'+k];
+  const tm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  const mins=v=>{const[h,m]=v.split(':');return +h*60+ +m};
+  function wk(n){off+=n;const m=monday();sel=key(m);render()}
+  function toggle(id,k){
+  const t=S.tasks.find(x=>x.id===id),dk=id+'|'+k;derive();const before=lvl(D.xp)[0];
+  if(S.done[dk])delete S.done[dk];else S.done[dk]={x:t.x,c:t.c,d:k,n:t.n,t:Date.now()};
+  derive();const after=lvl(D.xp)[0];save();render();
+  if(after>before)pop('LEVEL UP!','You are now Level '+after+' · Rank '+RK(after)+' · '+TT(after));
+  }
+  function pop(a,b){$('tm').textContent=a;$('tp').textContent=b;$('toast').classList.add('show')}
+  function del(id){if(!confirm("Delete this quest?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);save();render()}
+  function buy(i){const q=S.shop[i];derive();if(D.gold<q.p){pop("NOT ENOUGH GOLD","Complete more quests!");return}S.spent[Date.now()]={n:q.n,p:q.p};save();render();pop("REWARD CLAIMED",q.n)}
+  function delShop(i){S.shop.splice(i,1);save();render()}
+  function arc(cx,cy,r1,r2,a1,a2){
+  const p=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+  const L=a2-a1>Math.PI?1:0,[x1,y1]=p(r2,a1),[x2,y2]=p(r2,a2),[x3,y3]=p(r1,a2),[x4,y4]=p(r1,a1);
+  return `M${x1} ${y1}A${r2} ${r2} 0 ${L} 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 ${L} 0 ${x4} ${y4}Z`}
+  function clock(){const O=localStorage.getItem("hs-fwd")?0:Math.PI;
+  let h='<circle cx="160" cy="160" r="140" fill="#080d1b" stroke="#1f3a6e" stroke-width="2"/><circle cx="160" cy="160" r="92" fill="none" stroke="#12244a"/>';
+  for(let i=0;i<24;i++){const a=i/24*2*Math.PI+O,x1=160+132*Math.sin(a),y1=160-132*Math.cos(a),x2=160+(i%3?126:120)*Math.sin(a),y2=160-(i%3?126:120)*Math.cos(a);
+    h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3b9cff" stroke-opacity=".6"/>`;
+    h+=`<text x="${160+150*Math.sin(a)}" y="${160-150*Math.cos(a)+4}" text-anchor="middle" style="font-size:10px">${i}</text>`}
+  const ts=tasksOn(sel);
+  ts.forEach((t,i)=>{let a=t.s,b=t.e;if(b<=a)b+=1440;if(b-a>=1440)b=a+1439;const lane=i%2,r1=96+lane*20,r2=r1+18,d=isDone(t,sel);
+    h+=`<path d="${arc(160,160,r1,r2,a/1440*2*Math.PI+O,b/1440*2*Math.PI+O)}" fill="${COL[t.c]}" fill-opacity="${d?.25:.75}" stroke="#fff" stroke-opacity=".5" style="cursor:help" data-tip="${esc(qtip(t,sel))}"></path>`;
+    const m=((a+b)/2)/1440*2*Math.PI+O,rr=r1+9;
+    if(b-a>=75)h+=`<text x="${160+rr*Math.sin(m)}" y="${160-rr*Math.cos(m)+3}" text-anchor="middle" style="fill:#000;font-size:9px;font-weight:700">${esc(t.n.slice(0,9))}</text>`});
+  if(sel===key(new Date())){const n=new Date(),m=(n.getHours()*60+n.getMinutes())/1440*2*Math.PI+O;
+    h+=`<line x1="160" y1="160" x2="${160+126*Math.sin(m)}" y2="${160-126*Math.cos(m)}" stroke="#fff" stroke-width="2"/><circle cx="160" cy="160" r="4" fill="#fff"/>`}
+  const d=dateOf(sel),i=wd(d);
+  h+=`<text x="160" y="150" text-anchor="middle" style="fill:#fff;font-size:20px;font-weight:800">${DAYS[i]}</text><text x="160" y="170" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text><text x="160" y="186" text-anchor="middle">${ts.length} quests</text>`;
+  $('clk').innerHTML=h}
+  function streak(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!D.log[key(d)])d.setDate(d.getDate()-1);while(D.log[key(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
+  function render(){S.cats.forEach(c=>COL[c.k]=c.c);derive();fillOpts();
+  const[l,x,n]=lvl(D.xp);
+  $('rk').textContent=RK(l);$('nm').textContent=(S.avatar?S.avatar+' ':'')+S.name+' · LV '+l;$('ttl').textContent='['+TT(l)+']';
+  $('xb').style.width=(x/n*100)+'%';$('xt').textContent=x+' / '+n+' XP to next level'+(D.ex?' (includes +'+D.ex+' from missed quests)':'')+(D.missY?' · ⚠ missed yesterday: '+D.missY+' quest(s), +'+D.penY+' XP added to your next level':'');
+  $('st').textContent=streak();$('gd').textContent=Math.max(0,D.gold);
+  $('stats').innerHTML=Object.keys(D.stats).map(k=>`<div class="stat" style="border-color:${COL[k]}55">${k}<b style="color:${COL[k]}">${D.stats[k]}</b></div>`).join('');
+  const m=monday(),e=new Date(m);e.setDate(e.getDate()+6);
+  $('wl').textContent=m.getDate()+'/'+(m.getMonth()+1)+' – '+e.getDate()+'/'+(e.getMonth()+1);
+  let w='';const today=key(new Date());
+  for(let i=0;i<7;i++){const d=new Date(m);d.setDate(m.getDate()+i);const k=key(d),ts=tasksOn(k),dn=ts.filter(t=>isDone(t,k)).length,T=TH[i];
+    w+=`<div class="day ${k===sel?'sel':''} ${k===today?'today':''}" data-tip="${esc(dayTip(k))}" onclick="sel='${k}';render()" style="background:radial-gradient(circle at 70% 25%,#ffffff40,transparent 40%),linear-gradient(160deg,${T[2]})"><span class="em">${T[0]}</span><span class="dn">${DAYS[i]} ${d.getDate()}</span><span class="th">${T[1]}</span><span class="pr">${dn}/${ts.length} ✔</span></div>`}
+  $('week').innerHTML=w;
+  clock();
+  const d=dateOf(sel),ts=tasksOn(sel);
+  $('qh').textContent=DAYS[wd(d)]+' Quests';$('ch').textContent='Chrono Gate · '+DAYS[wd(d)];
+  $('tl').innerHTML=ts.length?ts.map(t=>`<div class="task ${isDone(t,sel)?'done':''}" data-tip="${esc(qtip(t,sel))}" style="--c:${COL[t.c]}"><button class="chk" onclick="toggle(${t.id},'${sel}')">${isDone(t,sel)?'✔':''}</button><div class="t">${esc(t.n)}<small>${tm(t.s)} – ${tm(t.e)} · ${t.c} · ${t.r==='once'?'one-time':t.r==='days'?t.days.map(i=>DAYS[i]).join('·'):t.r}</small></div><span class="xp">+${t.x} XP</span><button class="sm" onclick="edit(${t.id})">✎</button><button class="sm" onclick="del(${t.id})">✕</button></div>`).join(''):'<div class="mut">No quests for this day. Add one — the System awaits.</div>';
+  let wp='';
+  [['Daily habits','daily'],['Weekly quests','weekly'],['Custom days','days'],['One-time','once']].forEach(([lb,r])=>{
+    S.tasks.filter(t=>t.r===r).forEach(t=>{let tot=0,dn=0;for(let i=0;i<7;i++){const dd=new Date(m);dd.setDate(m.getDate()+i);const k=key(dd);if(onDay(t,k)){tot++;if(isDone(t,k))dn++}}
+    if(tot)wp+=`<div class="wq" data-tip="${esc(qinfo(t,dn,tot))}"><div style="display:flex;justify-content:space-between;align-items:center"><span>${esc(t.n)} <span class="mut">(${lb}) ${dn}/${tot}</span></span><span><button class="sm" onclick="edit(${t.id})">✎</button> <button class="sm" onclick="del(${t.id})">✕</button></span></div><div class="bar" style="height:8px"><i style="width:${dn/tot*100}%;background:${COL[t.c]}"></i></div></div>`})});
+  $('wp').innerHTML=wp||'<div class="mut">Add habits to see weekly progress.</div>';
+  $('sh').innerHTML=S.shop.map((s,i)=>`<div class="shop"><span>${esc(s.n)}</span><span><span class="gold">🪙 ${s.p}</span> <button class="sm" onclick="buy(${i})">Claim</button> <button class="sm" onclick="delShop(${i})">✕</button></span></div>`).join('');perf();market();profile();
+  }
+  const PAL=['#ff8ad8','#4fe3e0','#ff9f43','#c3f73a','#e2e8f0','#b08968'];
+  function fillOpts(){const fill=(id,items)=>{const s=$(id),v=s.value,nw=s.querySelector('[value=__new]');s.querySelectorAll('.cu').forEach(o=>o.remove());
+    items.forEach(([val,lab])=>{const o=document.createElement('option');o.className='cu';o.value=val;o.textContent=lab;s.insertBefore(o,nw)});
+    if([...s.options].some(o=>o.value===v))s.value=v};
+  fill('tc',S.cats.map(c=>[c.k,c.k]));fill('tx',S.xpo.map(x=>[''+x,'Custom – '+x+' XP']));fill('tr',S.rep.map(d=>['days:'+d,'Every '+d.map(i=>DAYS[i]).join(' · ')]))}
+  $('tc').onchange=function(){if(this.value!=='__new')return;
+  const n=(prompt('New category name (max 12 characters, emoji welcome):')||'').replace(/[<>&"'`]/g,'').trim().slice(0,12);
+  if(!n){this.selectedIndex=0;return}
+  if(!COL.hasOwnProperty(n)){S.cats.push({k:n,c:PAL[S.cats.length%PAL.length]});save()}
+  render();$('tc').value=n};
+  $('tx').onchange=function(){if(this.value!=='__new')return;
+  const x=Math.round(+prompt('How much XP for this quest? (1–1000)'));
+  if(!(x>=1&&x<=1000)){this.value='25';return}
+  if(!['10','25','50','100'].includes(''+x)&&!S.xpo.includes(x)){S.xpo.push(x);S.xpo.sort((a,b)=>a-b);save()}
+  render();$('tx').value=''+x};
+  $('tr').onchange=function(){if(this.value!=='__new')return;
+  const t=(prompt('Which days? Type day names, e.g. MON WED FRI — or WEEKDAYS / WEEKENDS')||'').toUpperCase();
+  const d=/WEEKDAY/.test(t)?[0,1,2,3,4]:/WEEKEND/.test(t)?[5,6]:DAYS.map((n,i)=>t.includes(n)?i:-1).filter(i=>i>=0);
+  if(!d.length){this.value='once';return}
+  if(d.length===7){this.value='daily';return}
+  if(!S.rep.some(r=>''+r===''+d)){S.rep.push(d);save()}
+  render();$('tr').value='days:'+d};
+  $('f').onsubmit=e=>{e.preventDefault();
+  S.tasks.push({id:Date.now(),n:$('tt').value.trim(),s:mins($('ts').value),e:mins($('te').value),c:$('tc').value,r:$('tr').value.startsWith('days:')?'days':$('tr').value,days:$('tr').value.startsWith('days:')?$('tr').value.slice(5).split(',').map(Number):undefined,x:+$('tx').value,date:sel,wd:wd(dateOf(sel))});
+  $('tt').value='';save();render()};
+  $('sf').onsubmit=e=>{e.preventDefault();S.shop.push({n:$('sn').value,p:+$('sp').value});$('sn').value='';$('sp').value='';save();render()};
+  $('nm').onclick=()=>$('pf').scrollIntoView({behavior:'smooth'});
+  setInterval(()=>{if(sel===key(new Date()))clock()},60000);
+  let D={};
+  function derive(){D={xp:0,gold:0,stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},log:{},ev:{},det:[],missY:0,penY:0};S.cats.forEach(c=>D.stats[c.k]=0);
+  const tk=key(new Date()),yk=key(new Date(Date.now()-864e5)),B=S.base,lg={},ll={},add=(m,d,v)=>{m[d]=(m[d]||0)+v};
+  if(!S.penFrom){S.penFrom=tk;try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}}
+  const ev=(d,c)=>D.ev[d+"|"+c]||(D.ev[d+"|"+c]={d,c,g:0,l:0});
+  for(const k in S.done){const c=S.done[k];D.gold+=Math.round(c.x/2);D.stats[c.c]=(D.stats[c.c]||0)+1;D.log[c.d]=(D.log[c.d]||0)+1;ev(c.d,c.c).g+=c.x;D.det.push({d:c.d,c:c.c,k:"done",n:c.n,x:c.x,t:c.t,id:k.split("|")[0]});if(!B||c.d>B.d||(c.d===B.d&&c.t>B.t))add(lg,c.d,c.x)}
+  (S.adj||[]).forEach(a=>{D.det.push({d:a.d,c:"ADM",k:"adj",n:"Admin adjustment",x:a.x,t:a.t});if(a.x>0){ev(a.d,"ADM").g+=a.x;if(!B||a.t>B.t)add(lg,a.d,a.x)}else{ev(a.d,"ADM").l-=a.x;if(!B||a.t>B.t)add(ll,a.d,-a.x)}});
+  S.tasks.forEach(t=>{const st=new Date(Math.max(t.id,dateOf(S.penFrom).getTime()));st.setHours(0,0,0,0);
+    for(let d=new Date(st);key(d)<tk;d.setDate(d.getDate()+1)){const k=key(d);if(onDay(t,k)&&!isDone(t,k)){ev(k,t.c).l+=t.x;D.det.push({d:k,c:t.c,k:"miss",n:t.n,x:t.x,s:t.s,e:t.e,id:t.id});if(!B||k>B.d)add(ll,k,t.x);if(k===yk){D.missY++;D.penY+=t.x}}}});
+  D.gold+=S.gadj||0;for(const k in S.spent)D.gold-=S.spent[k].p;
+  const sr=series();D.xp=sr.length?sr[sr.length-1].c:0;
+  let L=B?B.lv:1,p=B?B.lp:0,ex=0;[...new Set([...Object.keys(lg),...Object.keys(ll)])].sort().forEach(d=>{p+=lg[d]||0;while(p>=need(L)+ex){p-=need(L)+ex;L++;ex=0}ex+=ll[d]||0});
+  D.lv=L;D.lp=p;D.ex=ex;D.lreq=need(L)+ex}
+  function mergeIn(o){o=o.data||o;let n=0;
+  (o.tasks||[]).forEach(t=>{if(!S.tasks.some(x=>x.id===t.id)){S.tasks.push(t);n++}});
+  for(const k in o.done||{})if(!S.done[k]){S.done[k]=o.done[k];n++}
+  for(const k in o.spent||{})if(!S.spent[k]){S.spent[k]=o.spent[k];n++}
+  (o.shop||[]).forEach(q=>{if(!S.shop.some(x=>x.n===q.n)){S.shop.push(q);n++}});
+  (o.cats||[]).forEach(c=>{if(!S.cats.some(x=>x.k===c.k)){S.cats.push(c);n++}});
+  (o.xpo||[]).forEach(v=>{if(!S.xpo.includes(v)){S.xpo.push(v);n++}});
+  (o.rep||[]).forEach(v=>{if(!S.rep.some(x=>''+x===''+v)){S.rep.push(v);n++}});
+  return n}
+  async function exp(){const txt=JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1);
+  const f=new File([txt],"hunter-backup-"+key(new Date())+".json",{type:"application/json"});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}
+  $("imp").onchange=async e=>{let n=0,bad=0;
+  for(const f of e.target.files){try{n+=mergeIn(JSON.parse(await f.text()))}catch(x){bad++}}
+  e.target.value="";save();render();pop(n?"DATA MERGED":"NOTHING NEW",n+" new items added"+(bad?" · "+bad+" file(s) unreadable":""))};
+  const FN="hunter-system-data.json";let dir=null,ft;
+  const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("hs",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);q.onsuccess=()=>{const s=q.result.transaction("k",m==="get"?"readonly":"readwrite").objectStore("k"),rq=m==="get"?s.get("dir"):s.put(v,"dir");rq.onsuccess=()=>r(rq.result);rq.onerror=()=>r(null)}}catch(x){r(null)}});
+  const fst=t=>{$("fs").textContent=t};
+  async function readMerge(){try{const fh=await dir.getFileHandle(FN);mergeIn(JSON.parse(await(await fh.getFile()).text()))}catch(e){}}
+  function fileSave(){if(!dir)return;clearTimeout(ft);ft=setTimeout(async()=>{try{const fh=await dir.getFileHandle(FN,{create:true}),w=await fh.createWritable();
+  await w.write(JSON.stringify({app:"hunter-system",v:2,saved:new Date().toISOString(),data:S},null,1));await w.close();fst("✅ Auto-saved to folder \""+dir.name+"\" at "+new Date().toLocaleTimeString())}catch(e){fst("⚠ Folder save failed — click Reconnect folder")}},400)}
+  async function pick(){if(!window.showDirectoryPicker){pop("NOT SUPPORTED","This browser cannot write to folders (iPhone Safari cannot). Use Export / Import.");return}
+  try{dir=await showDirectoryPicker({mode:"readwrite",id:"hunter"});await idb("put",dir);await readMerge();save();render()}catch(e){}}
+  async function recon(){if(!window._h){pop("NO FOLDER","Choose a folder first.");return}
+  try{if(await window._h.requestPermission({mode:"readwrite"})==="granted"){dir=window._h;await readMerge();save();render()}}catch(e){}}
+  async function initFolder(){if(!window.showDirectoryPicker){fst("📱 This browser cannot auto-save to a folder. Use Export → Save to Files, then Import to merge.");return}
+  const h=await idb("get");if(!h){fst("No auto-save folder chosen yet.");return}
+  try{if(await h.queryPermission({mode:"readwrite"})==="granted"){dir=h;await readMerge();save();render()}else{window._h=h;fst("Folder remembered — click Reconnect folder to resume auto-save.")}}catch(e){fst("Choose the folder again.")}}
+  let pr="week",po=0;
+  function perf(){const now=new Date();now.setHours(0,0,0,0);let start,end,labels,idx,title;
+  if(pr==="day"){start=new Date(now);start.setDate(start.getDate()+po);end=start;labels=[...Array(24).keys()].map(String);idx=c=>c.d===key(start)?new Date(c.t||0).getHours():-1;title=start.toDateString()}
+  else if(pr==="week"){start=new Date(now);start.setDate(start.getDate()-wd(start)+po*7);end=new Date(start);end.setDate(end.getDate()+6);labels=DAYS.map(x=>x.slice(0,2));idx=c=>{const f=Math.round((dateOf(c.d)-start)/864e5);return f>=0&&f<7?f:-1};title=key(start)+" → "+key(end)}
+  else if(pr==="month"){start=new Date(now.getFullYear(),now.getMonth()+po,1);end=new Date(start.getFullYear(),start.getMonth()+1,0);labels=[...Array(end.getDate())].map((_,i)=>String(i+1));idx=c=>{const d=dateOf(c.d);return d>=start&&d<=end?d.getDate()-1:-1};title=start.toLocaleString("en",{month:"long",year:"numeric"})}
+  else{start=new Date(now.getFullYear()+po,0,1);end=new Date(start.getFullYear(),11,31);labels="JFMAMJJASOND".split("");idx=c=>dateOf(c.d).getFullYear()===start.getFullYear()?dateOf(c.d).getMonth():-1;title=String(start.getFullYear())}
+  const nm=[],n=labels.length,xs=Array(n).fill(0),cs=Array(n).fill(0),cat=Object.fromEntries(Object.keys(COL).map(k=>[k,0]));
+  Object.values(S.done).forEach(c=>{const i=idx(c);if(i>=0){xs[i]+=c.x;cs[i]++;(nm[i]=nm[i]||[]).push(c.n+" (+"+c.x+")");cat[c.c]=(cat[c.c]||0)+c.x}});
+  const bl=i=>pr==="day"?key(start)+" · "+String(i).padStart(2,"0")+":00":pr==="week"?(()=>{const d=new Date(start);d.setDate(d.getDate()+i);return DAYS[i]+" "+key(d)})():pr==="month"?key(new Date(start.getFullYear(),start.getMonth(),i+1)):new Date(start.getFullYear(),i,1).toLocaleString("en",{month:"long",year:"numeric"});let sched=0;for(let d=new Date(start);d<=end&&d<=now;d.setDate(d.getDate()+1))sched+=tasksOn(key(d)).length;
+  const tx=xs.reduce((a,b)=>a+b,0),tq=cs.reduce((a,b)=>a+b,0),best=xs.indexOf(Math.max(...xs));
+  $("pt").innerHTML=["day","week","month","year"].map(r=>`<button class="${r===pr?"on":""}" onclick="pr='${r}';po=0;perf()">${r.toUpperCase()}</button>`).join("");
+  $("pl").textContent=title;
+  $("pk").innerHTML=[["XP",tx],["Quests",tq],["Done %",sched?Math.min(100,Math.round(tq/sched*100))+"%":"–"],["Best",tx?labels[best]:"–"]].map(a=>`<div class="stat">${a[0]}<b>${a[1]}</b></div>`).join("");
+  const W=600,H=190,B=24,mx=Math.max(10,...xs),bw=W/n;
+  let g=`<defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#1a6bff"/></linearGradient></defs><text x="2" y="12">${mx} XP</text><line x1="0" x2="${W}" y1="${H-B}" y2="${H-B}" stroke="#1f3a6e"/>`;
+  xs.forEach((v,i)=>{const h=v/mx*(H-B-20),tp=esc(bl(i)+"\n+"+v+" XP · "+cs[i]+" quests"+(nm[i]?"\n"+nm[i].slice(0,8).join("\n"):""));g+=`<rect x="${i*bw+bw*.15}" y="${H-B-h}" width="${bw*.7}" height="${v?Math.max(h,2):0}" rx="2" fill="url(#gr)" data-tip="${tp}"></rect><rect x="${i*bw}" y="0" width="${bw}" height="${H-B}" fill="transparent" data-tip="${tp}"></rect>`;
+    if(n<=12||i%3==0)g+=`<text x="${i*bw+bw/2}" y="${H-8}" text-anchor="middle">${labels[i]}</text>`});
+  $("pc").innerHTML=g;
+  $("pcat").innerHTML=Object.keys(cat).map(k=>`<div class="mut">${k} · ${cat[k]} XP</div><div class="cb" data-tip="${esc((LBL[k]||k)+": "+cat[k]+" XP ("+(tx?Math.round(cat[k]/tx*100):0)+"% of this period)")}" style="width:${Math.max(2,tx?cat[k]/tx*100:0)}%;background:${COL[k]}"></div>`).join("");
+  let h="";const st=new Date(now);st.setDate(st.getDate()-wd(st)-16*7);
+  for(let i=0;i<119;i++){const d=new Date(st);d.setDate(st.getDate()+i);if(d>now){h+="<i></i>";continue}const c=D.log[key(d)]||0;h+=`<i data-tip="${esc(dayTip(key(d)))}" style="background:${c?`rgba(59,156,255,${Math.min(1,.2+c*.2)})`:"#0a1020"}"></i>`}
+  $("hm").innerHTML=h}
 
-const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct,channel=null,cloudDirty=false,cloudRevision=0,applyingCloud=false;
-const cst=t=>{$("cs").textContent=t};
-const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]});
-function applyCloud(data){
- if(!data||typeof data!=="object")return;
- applyingCloud=true;
- S=Object.assign(BLANK(),data);
- try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}
- fileSave();
- render();
- applyingCloud=false;
-}
-async function push(){
- if(!sb||!uid||!cloudDirty)return;
- clearTimeout(ct);
- const snapshot=JSON.parse(JSON.stringify(S));
- const r=await sb.from("hunter_data").upsert(
-  {user_id:uid,data:snapshot,updated_at:new Date().toISOString()},
-  {onConflict:"user_id"}
- );
- if(r.error){cst("⚠ Cloud sync failed: "+r.error.message);return}
- cloudDirty=false;
- cst("☁ Synced · "+new Date().toLocaleTimeString());
-}
-function cloudSave(){
- if(!sb||!uid||applyingCloud)return;
- cloudDirty=true;
- clearTimeout(ct);
- ct=setTimeout(push,700);
-}
-async function pull(){
- if(!sb||!uid)return;
- if(cloudDirty){await push();return}
- const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
- if(r.error){cst("⚠ Could not load cloud data: "+r.error.message);return}
- if(r.data&&r.data.data){applyCloud(r.data.data);cst("☁ Cloud data loaded")}
- else{cloudDirty=true;await push();cst("☁ New cloud profile created")}
-}
-function startRealtime(){
- if(channel){sb.removeChannel(channel);channel=null}
- channel=sb.channel("hunter-data-"+uid)
-  .on("postgres_changes",{event:"*",schema:"public",table:"hunter_data",filter:"user_id=eq."+uid},payload=>{
-   if(payload.new&&payload.new.data&&!cloudDirty){
-    applyCloud(payload.new.data);
-    cst("☁ Updated from another device · "+new Date().toLocaleTimeString());
-   }
-  })
-  .subscribe(status=>{if(status==="SUBSCRIBED")cst("☁ Live sync connected")});
-}
-
-let hunterIsAdmin=false, adminSelectedUser=null;
-function adminStatus(msg){$("adminSummary").textContent=msg||""}
-async function checkHunterAdmin(){
- hunterIsAdmin=false;
- $("adminOpen").style.display="none";
- if(!sb||!uid)return;
- try{
-  const r=await sb.rpc("hunter_admin_is_admin");
-  if(r.error){console.warn("Admin permission check:",r.error.message);return}
-  hunterIsAdmin=r.data===true;
-  $("adminOpen").style.display=hunterIsAdmin?"inline-block":"none";
- }catch(e){console.warn("Admin permission check failed",e)}
-}
-function openAdmin(){
- if(!hunterIsAdmin){pop("ACCESS DENIED","Administrator permission is required.");return}
- $("adminPanel").style.display="block";
- $("adminPanel").scrollIntoView({behavior:"smooth",block:"start"});
- adminLoadUsers();
- adminLoadAudit();
-}
-function closeAdmin(){$("adminPanel").style.display="none"}
-async function adminLoadUsers(){
- if(!hunterIsAdmin)return;
- adminStatus("Loading registered users…");
- const r=await sb.rpc("hunter_admin_list_users");
- if(r.error){adminStatus("Could not load users: "+r.error.message);return}
- const sel=$("adminUsers"),previous=sel.value;
- sel.innerHTML='<option value="">Choose a user…</option>';
- (r.data||[]).forEach(u=>{
-  const o=document.createElement("option");
-  o.value=u.user_id;
-  o.textContent=(u.email||"(no email)")+" · "+u.user_id.slice(0,8);
-  sel.appendChild(o);
- });
- if(previous&&[...sel.options].some(o=>o.value===previous))sel.value=previous;
- adminStatus((r.data||[]).length+" registered user(s). Select one to inspect or edit.");
- if(sel.value)await adminLoadSelected();
-}
-async function adminLoadSelected(){
- if(!hunterIsAdmin)return;
- const id=$("adminUsers").value;
- adminSelectedUser=id||null;
- if(!id){admData=null;admRender();$("adminJson").value="";adminStatus("Choose a user to inspect their data.");return}
- adminStatus("Loading selected user's data…");
- const r=await sb.rpc("hunter_admin_get_user_data",{p_target_user_id:id});
- if(r.error){adminStatus("Could not load user data: "+r.error.message);return}
- const data=r.data||{};
- $("adminJson").value=JSON.stringify(data,null,2);admData=data;admRender();
- const xp=Object.values(data.done||{}).reduce((sum,c)=>sum+Number(c&&c.x||0),0);
- const email=$("adminUsers").selectedOptions[0]?.textContent||id;
- adminStatus(email+" · Derived XP: "+xp+" · Completion records: "+Object.keys(data.done||{}).length+" · Tasks: "+(data.tasks||[]).length);
-}
-async function adminSaveUser(){
- if(!hunterIsAdmin||!adminSelectedUser){pop("SELECT A USER","Choose a user first.");return}
- let data;
- try{data=JSON.parse($("adminJson").value)}catch(e){pop("INVALID JSON","Fix the JSON syntax before saving.");return}
- if(!data||typeof data!=="object"||Array.isArray(data)){pop("INVALID DATA","The user's data must be a JSON object.");return}
- if(!confirm("Save these changes to the selected user's cloud data? This can overwrite their current progress."))return;
- adminStatus("Saving changes…");
- const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:data});
- if(r.error){adminStatus("Save failed: "+r.error.message);return}
- adminStatus("Changes saved. The user's device should receive the update through Realtime.");
- await adminLoadSelected();
- await adminLoadAudit();
-}
-async function adminLoadAudit(){
- if(!hunterIsAdmin)return;
- const r=await sb.rpc("hunter_admin_recent_audit");
- const el=$("adminAudit");
- if(r.error){el.textContent="Could not load audit history: "+r.error.message;return}
- if(!r.data||!r.data.length){el.textContent="No administrative changes recorded yet.";return}
- el.innerHTML="";
- r.data.forEach(a=>{
-  const row=document.createElement("div");
-  row.style.cssText="padding:7px 0;border-bottom:1px solid var(--line)";
-  const d=new Date(a.created_at);
-  row.textContent=d.toLocaleString()+" · "+a.action+" · target "+String(a.target_user_id).slice(0,8);
-  el.appendChild(row);
- });
-}
-
-async function enter(u){
- uid=u.id;
- try{
-  const old=localStorage.getItem("hunter-uid");
-  if(old&&old!==uid){S=BLANK();localStorage.setItem("hunter-sys",JSON.stringify(S))}
-  localStorage.setItem("hunter-uid",uid);
- }catch(e){}
- $("auth").style.display="none";$("lo").style.display="inline-block";
- cst("☁ Connecting as "+u.email);
- await pull();
- startRealtime();
- await checkHunterAdmin();
-}
-async function auth(m){
- const e=$("em").value.trim(),p=$("pw").value;
- if(!e||p.length<6){$("am").textContent="Enter an email and a password of 6+ characters.";return}
- $("am").textContent="Please wait...";
- const r=m==="up"?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
- if(r.error){$("am").textContent=r.error.message;return}
- if(!r.data.session){$("am").textContent="Account created. Check your email to confirm, then press Log in.";return}
- await enter(r.data.user);
-}
-async function out(){
- try{
+  const CFG=!SUPABASE_URL.includes("PASTE");let sb=null,uid=null,ct,channel=null,cloudDirty=false,cloudRevision=0,applyingCloud=false;
+  const cst=t=>{$("cs").textContent=t};
+  const BLANK=()=>({name:"Hunter",xp:0,gold:0,tasks:[],done:{},log:{},stats:{STR:0,INT:0,VIT:0,AGI:0,SEN:0},shop:[{n:"Watch an episode 🍿",p:40},{n:"Sweet treat 🍰",p:60},{n:"Gaming hour 🎮",p:100}],bought:0,spent:{},cats:[],xpo:[],rep:[]});
+  function applyCloud(data){
+  if(!data||typeof data!=="object")return;
+  applyingCloud=true;
+  S=Object.assign(BLANK(),data);
+  try{localStorage.setItem("hunter-sys",JSON.stringify(S))}catch(e){}
+  fileSave();
+  render();
+  applyingCloud=false;
+  }
+  async function push(){
+  if(!sb||!uid||!cloudDirty)return;
   clearTimeout(ct);
-  if(cloudDirty)await push();
-  if(channel)await sb.removeChannel(channel);
-  await sb.auth.signOut();
-  localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid");hunterIsAdmin=false;$("adminOpen").style.display="none";closeAdmin();
- }catch(e){}
- location.reload();
-}
-async function initAuth(){
- if(!CFG){cst("Local mode (no login). Add Supabase values at the top of the script to enable accounts.");return}
- try{sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){cst("⚠ Supabase failed to load");return}
- const r=await sb.auth.getSession();
- if(r.data.session)await enter(r.data.session.user);else $("auth").style.display="grid";
- document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid)pull()});
- window.addEventListener("online",()=>{if(uid&&cloudDirty)push()});
-}
+  const snapshot=JSON.parse(JSON.stringify(S));
+  const r=await sb.from("hunter_data").upsert(
+    {user_id:uid,data:snapshot,updated_at:new Date().toISOString()},
+    {onConflict:"user_id"}
+  );
+  if(r.error){cst("⚠ Cloud sync failed: "+r.error.message);return}
+  cloudDirty=false;
+  cst("☁ Synced · "+new Date().toLocaleTimeString());
+  }
+  function cloudSave(){
+  if(!sb||!uid||applyingCloud)return;
+  cloudDirty=true;
+  clearTimeout(ct);
+  ct=setTimeout(push,700);
+  }
+  async function pull(){
+  if(!sb||!uid)return;
+  if(cloudDirty){await push();return}
+  const r=await sb.from("hunter_data").select("data").eq("user_id",uid).maybeSingle();
+  if(r.error){cst("⚠ Could not load cloud data: "+r.error.message);return}
+  if(r.data&&r.data.data){applyCloud(r.data.data);cst("☁ Cloud data loaded")}
+  else{cloudDirty=true;await push();cst("☁ New cloud profile created")}
+  }
+  function startRealtime(){
+  if(channel){sb.removeChannel(channel);channel=null}
+  channel=sb.channel("hunter-data-"+uid)
+    .on("postgres_changes",{event:"*",schema:"public",table:"hunter_data",filter:"user_id=eq."+uid},payload=>{
+    if(payload.new&&payload.new.data&&!cloudDirty){
+      applyCloud(payload.new.data);
+      cst("☁ Updated from another device · "+new Date().toLocaleTimeString());
+    }
+    })
+    .subscribe(status=>{if(status==="SUBSCRIBED")cst("☁ Live sync connected")});
+  }
 
-const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-const LBL={STR:"Fitness",INT:"Study",VIT:"Health",AGI:"Work",SEN:"Mind"};
-let mrg=30;
-function flip(){if(localStorage.getItem("hs-fwd"))localStorage.removeItem("hs-fwd");else localStorage.setItem("hs-fwd","1");clock()}
-function edit(id){const t=S.tasks.find(x=>x.id===id),n=prompt("Quest name",t.n);if(n===null)return;const a=prompt("Start time (HH:MM)",tm(t.s)),b=prompt("End time (HH:MM)",tm(t.e)),ok=/^\d{1,2}:\d{2}$/;
- if(n.trim())t.n=n.trim().slice(0,60);if(ok.test(a||""))t.s=mins(a);if(ok.test(b||""))t.e=mins(b);save();render()}
-function series(cat){const m={};Object.values(D.ev).forEach(e=>{if(cat&&e.c!==cat)return;const r=m[e.d]||(m[e.d]={g:0,l:0});r.g+=e.g;r.l+=e.l});
- const ds=Object.keys(m).sort(),out=[];let b=0;
- if(ds.length){const t1=new Date();t1.setHours(0,0,0,0);for(let d=dateOf(ds[0]);d<=t1;d.setDate(d.getDate()+1)){const k=key(d),r=m[k]||{g:0,l:0},o=b,hi=o+r.g;b=Math.max(0,hi-r.l);out.push({d:k,o,h:hi,l:Math.min(o,b),c:b,g:r.g,ls:r.l})}}
- return out}
-function candle(s,W,H){s=mrg?s.slice(-mrg):s;if(!s.length)return '<div class="mut">No data yet — complete some quests.</div>';
- const L=8,Rr=44,T=10,B=18,pw=W-L-Rr,ph=H-T-B,v=s.map(c=>c.c);let mx=Math.max(...v,10),mn=Math.min(...v,0);if(mx===mn)mx=mn+10;
- const y=a=>T+ph-(a-mn)/(mx-mn)*ph,x=i=>s.length>1?L+i*pw/(s.length-1):L+pw/2;let g=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b9cff" stop-opacity=".35"/><stop offset="1" stop-color="#3b9cff" stop-opacity="0"/></linearGradient></defs>`;
- for(let i=0;i<=4;i++){const a=mn+(mx-mn)*i/4;g+=`<line x1="${L}" x2="${L+pw}" y1="${y(a)}" y2="${y(a)}" stroke="#1f3a6e" stroke-opacity=".6"/><text x="${L+pw+4}" y="${y(a)+4}">${Math.round(a)}</text>`}
- g+=`<path d="M${x(0)} ${y(mn)} ${v.map((a,i)=>"L"+x(i)+" "+y(a)).join(" ")} L${x(v.length-1)} ${y(mn)}Z" fill="url(#ga)"/>`;
- for(let i=1;i<v.length;i++)g+=`<line x1="${x(i-1)}" y1="${y(v[i-1])}" x2="${x(i)}" y2="${y(v[i])}" stroke="${v[i]>=v[i-1]?"#26d07c":"#ff4d6d"}" stroke-width="2.5" stroke-linecap="round"/>`;
- s.forEach((c,i)=>{g+=`<circle cx="${x(i)}" cy="${y(c.c)}" r="${s.length>45?1.5:3}" fill="${c.c>=c.o?"#26d07c":"#ff4d6d"}"><title>${c.d}: ${c.o} → ${c.c} XP (+${c.g} / −${c.ls})</title></circle>`});
- const l=s[s.length-1],ly=y(l.c);
- g+=`<line x1="${L}" x2="${L+pw}" y1="${ly}" y2="${ly}" stroke="#fff" stroke-dasharray="3 3" stroke-opacity=".5"/><rect x="${L+pw}" y="${ly-8}" width="${Rr-2}" height="16" fill="#3b9cff"/><text x="${L+pw+4}" y="${ly+4}" style="fill:#000;font-weight:700">${l.c}</text><text x="${L}" y="${H-4}">${s[0].d.slice(5)}</text><text x="${L+pw}" y="${H-4}" text-anchor="end">${l.d.slice(5)}</text>`;
- return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`}
-function radar(ks,bal){const n=ks.length,mx=Math.max(10,...ks.map(k=>bal[k])),C=150,R=95,pt=(i,r)=>[C+r*Math.sin(i/n*2*Math.PI),C-r*Math.cos(i/n*2*Math.PI)];let g="";
- [.25,.5,.75,1].forEach(f=>{g+=`<polygon points="${ks.map((_,i)=>pt(i,R*f).join(",")).join(" ")}" fill="none" stroke="#1f3a6e"/>`});
- ks.forEach((k,i)=>{const[x,y]=pt(i,R),[lx,ly]=pt(i,R+22);g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="#1f3a6e"/><text x="${lx}" y="${ly+4}" text-anchor="middle" style="fill:${COL[k]};font-weight:700">${esc(LBL[k]||k)} ${bal[k]}</text>`});
- g+=`<polygon points="${ks.map((k,i)=>pt(i,R*bal[k]/mx).join(",")).join(" ")}" fill="#3b9cff" fill-opacity=".3" stroke="#6fd0ff" stroke-width="2"/>`+ks.map((k,i)=>{const[x,y]=pt(i,R*bal[k]/mx);return `<circle cx="${x}" cy="${y}" r="3.5" fill="${COL[k]}"/>`}).join("");
- $("rd").innerHTML=`<svg viewBox="-20 0 340 300" width="100%" style="max-width:400px;display:block;margin:auto">${g}</svg>`}
-function market(){
- $("mr").innerHTML=[[14,"14D"],[30,"30D"],[90,"90D"],[0,"ALL"]].map(a=>`<button class="${a[0]===mrg?"on":""}" onclick="mrg=${a[0]};market()">${a[1]}</button>`).join("");
- const all=series(),last=all[all.length-1];
- $("mk").innerHTML=(last?`<div class="mut">Balance <b style="color:#fff;font-size:18px">${last.c} XP</b> · today ${last.c-last.o>=0?"+":""}${last.c-last.o} · total gained ${all.reduce((a,c)=>a+c.g,0)} · total lost ${all.reduce((a,c)=>a+c.ls,0)}</div>`:"")+candle(all,600,230);
- const ks=Object.keys(COL),bal={};
- $("cc").innerHTML=ks.map(k=>{const s=series(k),l=s[s.length-1];bal[k]=l?l.c:0;return `<div style="border:1px solid var(--line);border-radius:8px;padding:8px"><div style="color:${COL[k]};font-weight:700">${esc(LBL[k]||k)} <span class="mut">${l?l.c+" XP":""}</span></div>${candle(s,300,150)}</div>`}).join("");
- radar(ks,bal)}
+  let hunterIsAdmin=false, adminSelectedUser=null;
+  function adminStatus(msg){$("adminSummary").textContent=msg||""}
+  async function checkHunterAdmin(){
+  hunterIsAdmin=false;
+  $("adminOpen").style.display="none";
+  if(!sb||!uid)return;
+  try{
+    const r=await sb.rpc("hunter_admin_is_admin");
+    if(r.error){console.warn("Admin permission check:",r.error.message);return}
+    hunterIsAdmin=r.data===true;
+    $("adminOpen").style.display=hunterIsAdmin?"inline-block":"none";
+  }catch(e){console.warn("Admin permission check failed",e)}
+  }
+  function openAdmin(){
+  if(!hunterIsAdmin){pop("ACCESS DENIED","Administrator permission is required.");return}
+  $("adminPanel").style.display="block";
+  $("adminPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  adminLoadUsers();
+  adminLoadAudit();
+  }
+  function closeAdmin(){$("adminPanel").style.display="none"}
+  async function adminLoadUsers(){
+  if(!hunterIsAdmin)return;
+  adminStatus("Loading registered users…");
+  const r=await sb.rpc("hunter_admin_list_users");
+  if(r.error){adminStatus("Could not load users: "+r.error.message);return}
+  const sel=$("adminUsers"),previous=sel.value;
+  sel.innerHTML='<option value="">Choose a user…</option>';
+  (r.data||[]).forEach(u=>{
+    const o=document.createElement("option");
+    o.value=u.user_id;
+    o.textContent=(u.email||"(no email)")+" · "+u.user_id.slice(0,8);
+    sel.appendChild(o);
+  });
+  if(previous&&[...sel.options].some(o=>o.value===previous))sel.value=previous;
+  adminStatus((r.data||[]).length+" registered user(s). Select one to inspect or edit.");
+  if(sel.value)await adminLoadSelected();
+  }
+  async function adminLoadSelected(){
+  if(!hunterIsAdmin)return;
+  const id=$("adminUsers").value;
+  adminSelectedUser=id||null;
+  if(!id){admData=null;admRender();$("adminJson").value="";adminStatus("Choose a user to inspect their data.");return}
+  adminStatus("Loading selected user's data…");
+  const r=await sb.rpc("hunter_admin_get_user_data",{p_target_user_id:id});
+  if(r.error){adminStatus("Could not load user data: "+r.error.message);return}
+  const data=r.data||{};
+  $("adminJson").value=JSON.stringify(data,null,2);admData=data;admRender();
+  const xp=Object.values(data.done||{}).reduce((sum,c)=>sum+Number(c&&c.x||0),0);
+  const email=$("adminUsers").selectedOptions[0]?.textContent||id;
+  adminStatus(email+" · Derived XP: "+xp+" · Completion records: "+Object.keys(data.done||{}).length+" · Tasks: "+(data.tasks||[]).length);
+  }
+  async function adminSaveUser(){
+  if(!hunterIsAdmin||!adminSelectedUser){pop("SELECT A USER","Choose a user first.");return}
+  let data;
+  try{data=JSON.parse($("adminJson").value)}catch(e){pop("INVALID JSON","Fix the JSON syntax before saving.");return}
+  if(!data||typeof data!=="object"||Array.isArray(data)){pop("INVALID DATA","The user's data must be a JSON object.");return}
+  if(!confirm("Save these changes to the selected user's cloud data? This can overwrite their current progress."))return;
+  adminStatus("Saving changes…");
+  const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:data});
+  if(r.error){adminStatus("Save failed: "+r.error.message);return}
+  adminStatus("Changes saved. The user's device should receive the update through Realtime.");
+  await adminLoadSelected();
+  await adminLoadAudit();
+  }
+  async function adminLoadAudit(){
+  if(!hunterIsAdmin)return;
+  const r=await sb.rpc("hunter_admin_recent_audit");
+  const el=$("adminAudit");
+  if(r.error){el.textContent="Could not load audit history: "+r.error.message;return}
+  if(!r.data||!r.data.length){el.textContent="No administrative changes recorded yet.";return}
+  el.innerHTML="";
+  r.data.forEach(a=>{
+    const row=document.createElement("div");
+    row.style.cssText="padding:7px 0;border-bottom:1px solid var(--line)";
+    const d=new Date(a.created_at);
+    row.textContent=d.toLocaleString()+" · "+a.action+" · target "+String(a.target_user_id).slice(0,8);
+    el.appendChild(row);
+  });
+  }
 
-let admData=null,admKeys=[];
-function peek(data){const keep=S;S=Object.assign(BLANK(),JSON.parse(JSON.stringify(data)));try{derive();return{lv:D.lv,lp:D.lp,lreq:D.lreq,gold:D.gold,rank:RK(D.lv)}}finally{S=keep;derive()}}
-function admRender(){const el=$("admTools"),d=admData;if(!d){el.innerHTML="";return}
- const i=peek(d),inp=(id,v,w)=>`<input id="${id}" value="${esc(v)}" style="width:${w}px">`,h=t=>`<h2 style="margin:14px 0 6px">${t}</h2>`;
- admKeys=Object.keys(d.done||{}).sort((a,b)=>d.done[b].t-d.done[a].t).slice(0,12);
- el.innerHTML=`<div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat">Level<b>${i.lv}</b></div><div class="stat">Rank<b>${i.rank}</b></div><div class="stat">XP bar<b style="font-size:14px">${i.lp}/${i.lreq}</b></div><div class="stat">Gold<b>${Math.max(0,i.gold)}</b></div></div>
- ${h("Player name")}<div class="wide">${inp("aName",d.name||"Hunter",160)}<button onclick="admName()">Set name</button></div>
- ${h("Level &amp; XP bar")}<div class="wide" style="align-items:center"><span class="mut">Level</span>${inp("aLv",i.lv,60)}<span class="mut">XP in bar</span>${inp("aLp",i.lp,70)}<button onclick="admLevel()">Apply</button></div>
- ${h("Give / take XP &amp; gold")}<div class="wide" style="align-items:center">${inp("aXp","50",70)}<button onclick="admXp(1)">＋ Give XP</button><button onclick="admXp(-1)">− Take XP</button><span class="mut">Gold</span>${inp("aG",Math.max(0,i.gold),70)}<button onclick="admGold()">Set gold</button></div>
- ${h("Quests ("+(d.tasks||[]).length+")")}${(d.tasks||[]).map((t,n)=>`<div class="wide" style="margin-bottom:6px;align-items:center">${inp("qn"+n,t.n,150)}${inp("qx"+n,t.x,55)}<span class="mut">XP · ${esc(t.c)} · ${esc(t.r)}</span><button class="sm" onclick="admQuestSave(${n})">Save</button><button class="sm" onclick="admQuestDel(${n})">Delete</button></div>`).join("")||'<div class="mut">No quests.</div>'}
- ${h("Recent completions")}${admKeys.map((k,n)=>`<div class="wide" style="margin-bottom:4px;align-items:center"><span class="mut">${esc(d.done[k].d)} · ${esc(d.done[k].n)} · +${d.done[k].x} XP</span><button class="sm" onclick="admUndo(${n})">Remove</button></div>`).join("")||'<div class="mut">None.</div>'}
- ${h("Other")}<div class="wide"><button onclick="admForgive()">Forgive all missed-quest penalties</button><button onclick="admReset()" style="border-color:#ff4d6d">Reset all progress</button></div>`}
-async function admPush(msg){if(!hunterIsAdmin||!adminSelectedUser)return;if(!confirm(msg+"\n\nApply this to the selected user now?"))return;
- adminStatus("Saving…");const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:admData});
- if(r.error){adminStatus("Save failed: "+r.error.message);return}
- pop("DONE","Saved for this user.");await adminLoadSelected();await adminLoadAudit()}
-const anum=id=>Math.round(+$(id).value);
-function admName(){admData.name=$("aName").value.slice(0,20)||"Hunter";admPush("Change name")}
-function admLevel(){const L=anum("aLv"),q=anum("aLp");if(!(L>=1&&L<=500&&q>=0)){pop("INVALID","Level 1–500 and XP 0 or more.");return}
- if(q>=need(L)){pop("TOO HIGH","XP in the bar must be below "+need(L)+" for level "+L+".");return}
- admData.base={lv:L,lp:q,d:key(new Date()),t:Date.now()};admPush("Set level "+L+" with "+q+" XP in the bar")}
-function admXp(sg){const x=anum("aXp");if(!(x>0&&x<=100000)){pop("INVALID","Enter a positive number.");return}
- (admData.adj=admData.adj||[]).push({d:key(new Date()),t:Date.now(),x:sg*x});admPush((sg>0?"Give ":"Take ")+x+" XP")}
-function admGold(){const g=anum("aG");if(!(g>=0))return;admData.gadj=(admData.gadj||0)+(g-peek(admData).gold);admPush("Set gold to "+g)}
-function admQuestSave(n){const t=admData.tasks[n],x=anum("qx"+n);if(!(x>=1&&x<=1000)){pop("INVALID","XP must be 1–1000.");return}t.n=$("qn"+n).value.trim().slice(0,60)||t.n;t.x=x;admPush("Update this quest")}
-function admQuestDel(n){admData.tasks.splice(n,1);admPush("Delete this quest")}
-function admUndo(n){delete admData.done[admKeys[n]];admPush("Remove this completion")}
-function admForgive(){admData.penFrom=key(new Date());admPush("Forgive all past missed-quest penalties")}
-function admReset(){if(!confirm("This erases ALL XP, completions, purchases and level changes for this user. Their quests are kept. Continue?"))return;
- admData.done={};admData.spent={};admData.adj=[];delete admData.base;admData.gadj=0;admData.penFrom=key(new Date());admPush("RESET all progress")}
-render();initFolder();initAuth();
-</script></body></html>
+  async function enter(u){
+  uid=u.id;
+  try{
+    const old=localStorage.getItem("hunter-uid");
+    if(old&&old!==uid){S=BLANK();localStorage.setItem("hunter-sys",JSON.stringify(S))}
+    localStorage.setItem("hunter-uid",uid);
+  }catch(e){}
+  $("auth").style.display="none";$("lo").style.display="inline-block";
+  cst("☁ Connecting as "+u.email);
+  await pull();
+  {const mn=u.user_metadata&&u.user_metadata.name;if(S.name==="Hunter"&&mn){S.name=String(mn).slice(0,20);save();render()}}
+  startRealtime();
+  await checkHunterAdmin();
+  }
+  async function auth(m){
+  const e=$("em").value.trim(),p=$("pw").value;
+  if(!e||p.length<6){$("am").textContent="Enter an email and a password of 6+ characters.";return}
+  $("am").textContent="Please wait...";
+  const r=m==="up"?await sb.auth.signUp({email:e,password:p,options:{data:{name:($("nn").value.replace(/[<>&"'`]/g,"").trim().slice(0,20))||"Hunter"}}}):await sb.auth.signInWithPassword({email:e,password:p});
+  if(r.error){$("am").textContent=r.error.message;return}
+  if(!r.data.session){$("am").textContent="Account created. Check your email to confirm, then press Log in.";return}
+  await enter(r.data.user);
+  }
+  async function out(){
+  try{
+    clearTimeout(ct);
+    if(cloudDirty)await push();
+    if(channel)await sb.removeChannel(channel);
+    await sb.auth.signOut();
+    localStorage.removeItem("hunter-sys");localStorage.removeItem("hunter-uid");hunterIsAdmin=false;$("adminOpen").style.display="none";closeAdmin();
+  }catch(e){}
+  location.reload();
+  }
+  async function initAuth(){
+  if(!CFG){cst("Local mode (no login). Add Supabase values at the top of the script to enable accounts.");return}
+  try{sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){cst("⚠ Supabase failed to load");return}
+  const r=await sb.auth.getSession();
+  if(r.data.session)await enter(r.data.session.user);else $("auth").style.display="grid";
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid)pull()});
+  window.addEventListener("online",()=>{if(uid&&cloudDirty)push()});
+  }
+
+  const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  const LBL={STR:"Fitness",INT:"Study",VIT:"Health",AGI:"Work",SEN:"Mind"};
+  let mrg=30;
+  function flip(){if(localStorage.getItem("hs-fwd"))localStorage.removeItem("hs-fwd");else localStorage.setItem("hs-fwd","1");clock()}
+  function edit(id){const t=S.tasks.find(x=>x.id===id),n=prompt("Quest name",t.n);if(n===null)return;const a=prompt("Start time (HH:MM)",tm(t.s)),b=prompt("End time (HH:MM)",tm(t.e)),ok=/^\d{1,2}:\d{2}$/;
+  if(n.trim())t.n=n.trim().slice(0,60);if(ok.test(a||""))t.s=mins(a);if(ok.test(b||""))t.e=mins(b);save();render()}
+  function series(cat){const m={};Object.values(D.ev).forEach(e=>{if(cat&&e.c!==cat)return;const r=m[e.d]||(m[e.d]={g:0,l:0});r.g+=e.g;r.l+=e.l});
+  (D.det||[]).forEach(e=>{if(cat&&e.c!==cat)return;const r=m[e.d];if(r)(r.det=r.det||[]).push(e)});const ds=Object.keys(m).sort(),out=[];let b=0;
+  if(ds.length){const t1=new Date();t1.setHours(0,0,0,0);for(let d=dateOf(ds[0]);d<=t1;d.setDate(d.getDate()+1)){const k=key(d),r=m[k]||{g:0,l:0},o=b,hi=o+r.g;b=Math.max(0,hi-r.l);out.push({d:k,o,h:hi,l:Math.min(o,b),c:b,g:r.g,ls:r.l,det:r.det||[]})}}
+  return out}
+  function candle(s,W,H){s=mrg?s.slice(-mrg):s;if(!s.length)return '<div class="mut">No data yet — complete some quests.</div>';
+  const L=8,Rr=44,T=10,B=18,pw=W-L-Rr,ph=H-T-B,v=s.map(c=>c.c);let mx=Math.max(...v,10),mn=Math.min(...v,0);if(mx===mn)mx=mn+10;
+  const y=a=>T+ph-(a-mn)/(mx-mn)*ph,x=i=>s.length>1?L+i*pw/(s.length-1):L+pw/2;let g=`<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b9cff" stop-opacity=".35"/><stop offset="1" stop-color="#3b9cff" stop-opacity="0"/></linearGradient></defs>`;
+  for(let i=0;i<=4;i++){const a=mn+(mx-mn)*i/4;g+=`<line x1="${L}" x2="${L+pw}" y1="${y(a)}" y2="${y(a)}" stroke="#1f3a6e" stroke-opacity=".6"/><text x="${L+pw+4}" y="${y(a)+4}">${Math.round(a)}</text>`}
+  g+=`<path d="M${x(0)} ${y(mn)} ${v.map((a,i)=>"L"+x(i)+" "+y(a)).join(" ")} L${x(v.length-1)} ${y(mn)}Z" fill="url(#ga)"/>`;
+  for(let i=1;i<v.length;i++)g+=`<line x1="${x(i-1)}" y1="${y(v[i-1])}" x2="${x(i)}" y2="${y(v[i])}" stroke="${v[i]>=v[i-1]?"#26d07c":"#ff4d6d"}" stroke-width="2.5" stroke-linecap="round"/>`;
+  s.forEach((c,i)=>{const tp=esc(ptTip(c));g+=`<circle cx="${x(i)}" cy="${y(c.c)}" r="${s.length>45?1.5:3}" fill="${c.c>=c.o?"#26d07c":"#ff4d6d"}"/><circle cx="${x(i)}" cy="${y(c.c)}" r="8" fill="transparent" data-tip="${tp}"/>`});
+  const l=s[s.length-1],ly=y(l.c);
+  g+=`<line x1="${L}" x2="${L+pw}" y1="${ly}" y2="${ly}" stroke="#fff" stroke-dasharray="3 3" stroke-opacity=".5"/><rect x="${L+pw}" y="${ly-8}" width="${Rr-2}" height="16" fill="#3b9cff"/><text x="${L+pw+4}" y="${ly+4}" style="fill:#000;font-weight:700">${l.c}</text><text x="${L}" y="${H-4}">${s[0].d.slice(5)}</text><text x="${L+pw}" y="${H-4}" text-anchor="end">${l.d.slice(5)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`}
+  function radar(ks,bal){const n=ks.length,mx=Math.max(10,...ks.map(k=>bal[k])),C=150,R=95,pt=(i,r)=>[C+r*Math.sin(i/n*2*Math.PI),C-r*Math.cos(i/n*2*Math.PI)];let g="";
+  [.25,.5,.75,1].forEach(f=>{g+=`<polygon points="${ks.map((_,i)=>pt(i,R*f).join(",")).join(" ")}" fill="none" stroke="#1f3a6e"/>`});
+  ks.forEach((k,i)=>{const[x,y]=pt(i,R),[lx,ly]=pt(i,R+22);g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="#1f3a6e"/><text x="${lx}" y="${ly+4}" text-anchor="middle" style="fill:${COL[k]};font-weight:700">${esc(LBL[k]||k)} ${bal[k]}</text>`});
+  g+=`<polygon points="${ks.map((k,i)=>pt(i,R*bal[k]/mx).join(",")).join(" ")}" fill="#3b9cff" fill-opacity=".3" stroke="#6fd0ff" stroke-width="2"/>`+ks.map((k,i)=>{const[x,y]=pt(i,R*bal[k]/mx);return `<circle cx="${x}" cy="${y}" r="3.5" fill="${COL[k]}"/><circle cx="${x}" cy="${y}" r="11" fill="transparent" data-tip="${esc((LBL[k]||k)+"\n"+bal[k]+" XP balance\n"+(D.stats[k]||0)+" quests completed\n"+Math.round(bal[k]/mx*100)+"% of your top skill")}"/>`}).join("");
+  $("rd").innerHTML=`<svg viewBox="-20 0 340 300" width="100%" style="max-width:400px;display:block;margin:auto">${g}</svg>`}
+  function market(){
+  $("mr").innerHTML=[[14,"14D"],[30,"30D"],[90,"90D"],[0,"ALL"]].map(a=>`<button class="${a[0]===mrg?"on":""}" onclick="mrg=${a[0]};market()">${a[1]}</button>`).join("");
+  const all=series(),last=all[all.length-1];
+  $("mk").innerHTML=(last?`<div class="mut">Balance <b style="color:#fff;font-size:18px">${last.c} XP</b> · today ${last.c-last.o>=0?"+":""}${last.c-last.o} · total gained ${all.reduce((a,c)=>a+c.g,0)} · total lost ${all.reduce((a,c)=>a+c.ls,0)}</div>`:"")+candle(all,600,230);
+  const ks=Object.keys(COL),bal={};
+  $("cc").innerHTML=ks.map(k=>{const s=series(k),l=s[s.length-1];bal[k]=l?l.c:0;return `<div style="border:1px solid var(--line);border-radius:8px;padding:8px"><div style="color:${COL[k]};font-weight:700">${esc(LBL[k]||k)} <span class="mut">${l?l.c+" XP":""}</span></div>${candle(s,300,150)}</div>`}).join("");
+  radar(ks,bal)}
+
+  let admData=null,admKeys=[];
+  function peek(data){const keep=S;S=Object.assign(BLANK(),JSON.parse(JSON.stringify(data)));try{derive();return{lv:D.lv,lp:D.lp,lreq:D.lreq,gold:D.gold,rank:RK(D.lv)}}finally{S=keep;derive()}}
+  function admRender(){const el=$("admTools"),d=admData;if(!d){el.innerHTML="";return}
+  const i=peek(d),inp=(id,v,w)=>`<input id="${id}" value="${esc(v)}" style="width:${w}px">`,h=t=>`<h2 style="margin:14px 0 6px">${t}</h2>`;
+  admKeys=Object.keys(d.done||{}).sort((a,b)=>d.done[b].t-d.done[a].t).slice(0,12);
+  el.innerHTML=`<div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat">Level<b>${i.lv}</b></div><div class="stat">Rank<b>${i.rank}</b></div><div class="stat">XP bar<b style="font-size:14px">${i.lp}/${i.lreq}</b></div><div class="stat">Gold<b>${Math.max(0,i.gold)}</b></div></div>
+  ${h("Player name")}<div class="wide">${inp("aName",d.name||"Hunter",160)}<button onclick="admName()">Set name</button></div>
+  ${h("Level &amp; XP bar")}<div class="wide" style="align-items:center"><span class="mut">Level</span>${inp("aLv",i.lv,60)}<span class="mut">XP in bar</span>${inp("aLp",i.lp,70)}<button onclick="admLevel()">Apply</button></div>
+  ${h("Give / take XP &amp; gold")}<div class="wide" style="align-items:center">${inp("aXp","50",70)}<button onclick="admXp(1)">＋ Give XP</button><button onclick="admXp(-1)">− Take XP</button><span class="mut">Gold</span>${inp("aG",Math.max(0,i.gold),70)}<button onclick="admGold()">Set gold</button></div>
+  ${h("Quests ("+(d.tasks||[]).length+")")}${(d.tasks||[]).map((t,n)=>`<div class="wide" style="margin-bottom:6px;align-items:center">${inp("qn"+n,t.n,150)}${inp("qx"+n,t.x,55)}<span class="mut">XP · ${esc(t.c)} · ${esc(t.r)}</span><button class="sm" onclick="admQuestSave(${n})">Save</button><button class="sm" onclick="admQuestDel(${n})">Delete</button></div>`).join("")||'<div class="mut">No quests.</div>'}
+  ${h("Recent completions")}${admKeys.map((k,n)=>`<div class="wide" style="margin-bottom:4px;align-items:center"><span class="mut">${esc(d.done[k].d)} · ${esc(d.done[k].n)} · +${d.done[k].x} XP</span><button class="sm" onclick="admUndo(${n})">Remove</button></div>`).join("")||'<div class="mut">None.</div>'}
+  ${h("Other")}<div class="wide"><button onclick="admForgive()">Forgive all missed-quest penalties</button><button onclick="admReset()" style="border-color:#ff4d6d">Reset all progress</button></div>`}
+  async function admPush(msg){if(!hunterIsAdmin||!adminSelectedUser)return;if(!confirm(msg+"\n\nApply this to the selected user now?"))return;
+  adminStatus("Saving…");const r=await sb.rpc("hunter_admin_update_user_data",{p_target_user_id:adminSelectedUser,p_new_data:admData});
+  if(r.error){adminStatus("Save failed: "+r.error.message);return}
+  pop("DONE","Saved for this user.");await adminLoadSelected();await adminLoadAudit()}
+  const anum=id=>Math.round(+$(id).value);
+  function admName(){admData.name=$("aName").value.slice(0,20)||"Hunter";admPush("Change name")}
+  function admLevel(){const L=anum("aLv"),q=anum("aLp");if(!(L>=1&&L<=500&&q>=0)){pop("INVALID","Level 1–500 and XP 0 or more.");return}
+  if(q>=need(L)){pop("TOO HIGH","XP in the bar must be below "+need(L)+" for level "+L+".");return}
+  admData.base={lv:L,lp:q,d:key(new Date()),t:Date.now()};admPush("Set level "+L+" with "+q+" XP in the bar")}
+  function admXp(sg){const x=anum("aXp");if(!(x>0&&x<=100000)){pop("INVALID","Enter a positive number.");return}
+  (admData.adj=admData.adj||[]).push({d:key(new Date()),t:Date.now(),x:sg*x});admPush((sg>0?"Give ":"Take ")+x+" XP")}
+  function admGold(){const g=anum("aG");if(!(g>=0))return;admData.gadj=(admData.gadj||0)+(g-peek(admData).gold);admPush("Set gold to "+g)}
+  function admQuestSave(n){const t=admData.tasks[n],x=anum("qx"+n);if(!(x>=1&&x<=1000)){pop("INVALID","XP must be 1–1000.");return}t.n=$("qn"+n).value.trim().slice(0,60)||t.n;t.x=x;admPush("Update this quest")}
+  function admQuestDel(n){admData.tasks.splice(n,1);admPush("Delete this quest")}
+  function admUndo(n){delete admData.done[admKeys[n]];admPush("Remove this completion")}
+  function admForgive(){admData.penFrom=key(new Date());admPush("Forgive all past missed-quest penalties")}
+  function admReset(){if(!confirm("This erases ALL XP, completions, purchases and level changes for this user. Their quests are kept. Continue?"))return;
+  admData.done={};admData.spent={};admData.adj=[];delete admData.base;admData.gadj=0;admData.penFrom=key(new Date());admPush("RESET all progress")}
+
+  const AVS=["⚔️","🗡️","🛡️","🏹","🔮","👑","🐺","🐉","🦅","🔥","⚡","🌙","💀","🦇","🥷","🧙","🤺","🏆","🌟","🎯"];let pAv=null;
+  function bestStreak(){let b=0,c=0,pv=null;Object.keys(D.log).sort().forEach(d=>{c=pv&&Math.round((dateOf(d)-dateOf(pv))/864e5)===1?c+1:1;pv=d;b=Math.max(b,c)});return b}
+  function profile(){const el=$("pf"),l=D.lv,av=pAv||S.avatar||"⚔️",ok=/^#[0-9a-f]{6}$/i.test(S.accent||"");S.joined=S.joined||key(new Date());
+  document.documentElement.style.setProperty("--glow",ok?S.accent:"#3b9cff");
+  const ks=Object.keys(D.stats).sort((a,b)=>D.stats[b]-D.stats[a]),tg=Object.values(S.done).reduce((a,c)=>a+c.x,0),act=document.activeElement&&el.contains(document.activeElement);if(act)return;
+  el.innerHTML=`<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="width:84px;height:84px;border-radius:50%;border:3px solid var(--glow);display:grid;place-items:center;font-size:44px;box-shadow:0 0 18px var(--glow)">${av}</div><div style="flex:1;min-width:180px"><div style="font-size:20px;font-weight:700">${esc(S.name)}</div><div class="mut">[${TT(l)}] · Rank ${RK(l)} · Level ${l} · Joined ${esc(S.joined)}</div><div style="margin-top:4px">${esc(S.bio||"No bio yet. Tell the System who you are.")}</div></div></div>
+  <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">${[["Quests done",Object.keys(S.done).length],["Total XP earned",tg],["Best streak",bestStreak()+"d"],["Gold",Math.max(0,D.gold)],["Top skill",D.stats[ks[0]]?esc(LBL[ks[0]]||ks[0]):"–"]].map(a=>`<div class="stat">${a[0]}<b style="font-size:15px">${a[1]}</b></div>`).join("")}</div>
+  <h2 style="margin:14px 0 6px">Edit profile</h2><div class="mut">Avatar</div><div class="wide" style="margin:4px 0 8px">${AVS.map(a=>`<button class="sm" style="font-size:20px;${a===av?"background:var(--glow);color:#000":""}" onclick="pAv='${a}';profile()">${a}</button>`).join("")}</div>
+  <div class="wide" style="align-items:center"><input id="pName" maxlength="20" value="${esc(S.name)}" placeholder="Hunter name" style="width:180px"><span class="mut">Theme color</span><input id="pCol" type="color" value="${ok?S.accent:"#3b9cff"}" style="width:56px;padding:2px"></div>
+  <textarea id="pBio" maxlength="140" placeholder="Short bio (140 characters)" style="width:100%;margin:8px 0;height:60px;background:#0a1020;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:8px;font:inherit">${esc(S.bio||"")}</textarea>
+  <div class="wide"><button onclick="saveProfile()">💾 Save profile</button><button onclick="saveProfile(1)">Reset theme color</button></div>`}
+  function saveProfile(r){const n=$("pName").value.replace(/[<>&"'`]/g,"").trim().slice(0,20)||"Hunter",c=$("pCol").value;
+  S.name=n;S.bio=$("pBio").value.slice(0,140);if(pAv)S.avatar=pAv;pAv=null;S.accent=r||c==="#3b9cff"?"":c;save();$("pf").innerHTML="";render();pop("PROFILE SAVED","Looking good, "+S.name)}
+
+  const hm=m=>tm(new Date(m).getHours()*60+new Date(m).getMinutes());
+  function lines(det){const o=det.slice().sort((a,b)=>(a.t||0)-(b.t||0)||(a.s||0)-(b.s||0)).slice(0,10).map(e=>{
+  const q=e.s==null?S.tasks.find(t=>String(t.id)===e.id):e,when=q&&q.s!=null?"  🕒 "+tm(q.s)+"–"+tm(q.e):"";
+  return e.k==="adj"?"⚙ Admin "+(e.x>0?"+":"")+e.x+" XP":e.k==="done"?"✔ "+e.n+when+"  +"+e.x+" XP"+(e.t?"  (ticked "+hm(e.t)+")":""):"✘ "+e.n+when+"  −"+e.x+" XP (missed)"});
+  if(det.length>10)o.push("… +"+(det.length-10)+" more");return o}
+  function ptTip(c){const l=lines(c.det||[]);return [c.d+" ("+DAYS[wd(dateOf(c.d))]+")","Balance: "+c.o+" → "+c.c+" XP","Gained +"+c.g+" · Lost −"+c.ls].concat(l.length?l:["No quests recorded"]).join("\n")}
+  function dayTip(k){const t0=key(new Date()),det=D.det.filter(e=>e.d===k),L=[k+" ("+DAYS[wd(dateOf(k))]+")"];
+  const g=det.reduce((a,e)=>a+(e.k!=="miss"&&e.x>0?e.x:0),0),l=det.reduce((a,e)=>a+(e.k==="miss"?e.x:e.x<0?-e.x:0),0);
+  L.push("+"+g+" XP gained · −"+l+" XP lost");L.push(...lines(det));
+  if(k>=t0)tasksOn(k).filter(t=>!isDone(t,k)).slice(0,8).forEach(t=>L.push("⏳ "+t.n+"  🕒 "+tm(t.s)+"–"+tm(t.e)+"  "+t.x+" XP (pending)"));
+  if(L.length===2&&!det.length)L.push("Nothing recorded");return L.join("\n")}
+  const rpt=t=>t.r==="once"?"one-time":t.r==="days"?(t.days||[]).map(i=>DAYS[i]).join("·"):t.r;
+  function qtip(t,k){const dn=isDone(t,k),m=(t.e<=t.s?t.e+1440:t.e)-t.s,dd=S.done[t.id+"|"+k];
+  return [t.n,"🕒 "+tm(t.s)+" – "+tm(t.e)+" ("+Math.floor(m/60)+"h "+m%60+"m)","📅 "+k+" ("+DAYS[wd(dateOf(k))]+")","🏷 "+(LBL[t.c]||t.c)+" · 🔁 "+rpt(t),"+"+t.x+" XP · "+(dn?"✔ Completed"+(dd&&dd.t?" at "+hm(dd.t):""):k<key(new Date())?"✘ Missed (−"+t.x+" XP)":"⏳ Not completed yet")].join("\n")}
+  function qinfo(t,dn,tot){return [t.n,"🕒 "+tm(t.s)+" – "+tm(t.e),"🔁 "+rpt(t),(LBL[t.c]||t.c)+" · +"+t.x+" XP","🎯 "+dn+"/"+tot+" done this week"].join("\n")}
+  (function(){const tp=document.createElement("div");tp.id="tip";tp.style.cssText="position:fixed;z-index:200;display:none;max-width:300px;background:#070c18f2;border:1px solid var(--glow);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;color:#dbe8ff;box-shadow:0 0 14px #3b9cff55;pointer-events:none;white-space:pre-line";document.body.appendChild(tp);
+  const show=(el,x,y)=>{tp.textContent=el.getAttribute("data-tip");tp.style.display="block";const w=tp.offsetWidth,h=tp.offsetHeight;tp.style.left=Math.max(6,Math.min(innerWidth-w-6,x+14))+"px";tp.style.top=Math.max(6,Math.min(innerHeight-h-6,y+14))+"px"};
+  const go=e=>{const el=e.target.closest&&e.target.closest("[data-tip]");if(el)show(el,e.clientX,e.clientY);else tp.style.display="none"};
+  document.addEventListener("mousemove",go);document.addEventListener("click",go);document.addEventListener("scroll",()=>{tp.style.display="none"},true)})();
+  render();initFolder();initAuth();
+  </script></body></html>
